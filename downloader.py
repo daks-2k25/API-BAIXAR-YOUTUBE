@@ -3,6 +3,7 @@ import os
 import queue
 import threading
 
+#test
 # Dicionários e Fila globais
 status_download = {}
 fila_downloads = queue.Queue()
