@@ -1,0 +1,41 @@
+import os
+import subprocess
+
+# Usa o FFmpeg (já necessário para os downloads) para ler o formato HEIC da Apple.
+# O pillow-heif foi removido porque o Controle Inteligente de Aplicativos do
+# Windows bloqueia a DLL dele.
+
+def converter_heic_para_jpg(caminho_entrada, caminho_saida=None):
+    if not os.path.exists(caminho_entrada):
+        print("Erro: Arquivo de entrada não encontrado.")
+        return False
+
+    # Se não informar o caminho de saída, salva com o mesmo nome, mas final .jpg
+    if not caminho_saida:
+        caminho_saida = caminho_entrada.rsplit('.', 1)[0] + ".jpg"
+
+    print(f"Iniciando conversão de: {caminho_entrada}")
+
+    comando = [
+        "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+        "-i", caminho_entrada,
+        "-frames:v", "1",   # HEIC pode ter várias imagens; pega só a principal
+        "-q:v", "1",        # Qualidade máxima do JPG
+        caminho_saida,
+    ]
+
+    try:
+        resultado = subprocess.run(comando, capture_output=True, text=True)
+
+        if resultado.returncode != 0 or not os.path.exists(caminho_saida):
+            print(f"Erro durante a conversão: {resultado.stderr.strip()}")
+            return False
+
+        print(f"Sucesso! Imagem salva em: {caminho_saida}")
+
+        # Retorna o caminho para que o app.py consiga devolver ao usuário
+        return caminho_saida
+
+    except FileNotFoundError:
+        print("Erro durante a conversão: FFmpeg não encontrado no PATH.")
+        return False
