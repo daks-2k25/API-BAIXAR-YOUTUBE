@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baixar YouTube</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="icone.ico" sizes="any">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="brilho"></div>
+
+    <main class="container">
+        <header>
+            <img class="logo" src="logo.svg" alt="Logo do Baixar YouTube">
+            <h1>Baixar YouTube</h1>
+            <p class="subtitulo">Vídeos em MP4, músicas em MP3 e fotos HEIC para JPG.</p>
+        </header>
+
+        <!-- Abas -->
+        <nav class="abas">
+            <button class="aba ativa" data-aba="youtube">YouTube</button>
+            <button class="aba" data-aba="heic">HEIC → JPG</button>
+        </nav>
+
+        <!-- Ferramenta 1: YouTube -->
+        <section id="youtube" class="card">
+            <form id="form-download">
+                <input id="url" type="url" placeholder="Cole o link do YouTube..." required>
+
+                <div class="opcoes">
+                    <div class="grupo" id="formatos">
+                        <button type="button" class="chip ativo" data-formato="mp4">MP4</button>
+                        <button type="button" class="chip" data-formato="mp3">MP3</button>
+                    </div>
+                    <div class="grupo" id="qualidades">
+                        <!-- Preenchido pelo script.js com /api/qualidades -->
+                    </div>
+                </div>
+
+                <button type="submit" class="botao">Baixar agora</button>
+            </form>
+
+            <ul id="lista-downloads"></ul>
+        </section>
+
+        <!-- Ferramenta 2: HEIC -->
+        <section id="heic" class="card escondido">
+            <label class="area-arquivo" id="area-arquivo">
+                <input id="arquivo-heic" type="file" accept=".heic,.heif" hidden>
+                <span class="icone">⬆</span>
+                <span>Clique ou arraste uma foto <b>.heic</b> aqui</span>
+            </label>
+            <p id="status-heic" class="status"></p>
+        </section>
+
+        <footer>
+            <p>Os arquivos são apagados do servidor depois de baixados.</p>
+            <button id="encerrar" class="encerrar">⏻ Encerrar programa</button>
+        </footer>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

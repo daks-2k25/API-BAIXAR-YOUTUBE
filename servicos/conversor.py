@@ -25,7 +25,11 @@ def converter_heic_para_jpg(caminho_entrada, caminho_saida=None):
     ]
 
     try:
-        resultado = subprocess.run(comando, capture_output=True, text=True)
+        # CREATE_NO_WINDOW: não pisca uma janela preta do FFmpeg no Windows
+        resultado = subprocess.run(
+            comando, capture_output=True, text=True,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
 
         if resultado.returncode != 0 or not os.path.exists(caminho_saida):
             print(f"Erro durante a conversão: {resultado.stderr.strip()}")

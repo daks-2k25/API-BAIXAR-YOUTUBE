@@ -1,93 +1,102 @@
-# API de Download de Vídeos (Flask + yt-dlp)
+# Baixar YouTube
 
-API REST em Python para baixar vídeos (MP4) ou extrair o áudio (MP3) a partir de uma URL, usando o [yt-dlp](https://github.com/yt-dlp/yt-dlp). Os downloads entram numa fila e são processados um de cada vez em segundo plano; o cliente acompanha o progresso e baixa o arquivo quando ele estiver pronto.
+Aplicação em Python para baixar vídeos do YouTube em **MP4** ou extrair o áudio em **MP3**, além de converter fotos **HEIC** (iPhone) para **JPG**. Tem um **painel web** que abre sozinho no navegador e uma **API REST** por trás, feita com Flask e [yt-dlp](https://github.com/yt-dlp/yt-dlp).
 
-## Funcionalidades
+## Início rápido (Windows)
 
-- Download de vídeo em **MP4** com **escolha de resolução** (360p, 480p, 720p ou 1080p)
-- Extração de áudio em **MP3** (192 kbps)
-- **Fila de processamento** em background (um download por vez, sem travar a API)
-- **Acompanhamento de progresso** em porcentagem
-- **Conversão de imagens HEIC** (fotos do iPhone) para **JPG**
-- **Limpeza automática**: o arquivo é apagado do servidor depois de ser baixado, ou após 30 minutos se ninguém baixar
-- **CORS** habilitado, pronto para ser consumido por um frontend
+1. Instale o que o projeto precisa (só na primeira vez):
 
-## Tecnologias
+   ```powershell
+   winget install Python.Python.3.13
+   winget install ffmpeg
+   winget install DenoLand.Deno
+   ```
 
-- [Python 3](https://www.python.org/)
-- [Flask](https://flask.palletsprojects.com/)
-- [Flask-CORS](https://flask-cors.readthedocs.io/)
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp)
-- [FFmpeg](https://ffmpeg.org/) (necessário para juntar vídeo/áudio, converter para MP3 e converter HEIC para JPG)
+   O **Deno** é opcional, mas recomendado: o yt-dlp usa ele para ler o YouTube, e sem ele alguns vídeos podem falhar.
 
-## Estrutura do projeto
-
-```
-API-BAIXAR-YOUTUBE/
-├── app.py               # Rotas da API (Flask)
-├── servicos/
-│   ├── downloader.py    # Fila e worker de download (yt-dlp)
-│   ├── conversor.py     # Conversão de HEIC para JPG (FFmpeg)
-│   └── limpeza.py       # Apaga arquivos esquecidos após 30 minutos
-├── downloads/           # Pasta temporária dos arquivos gerados
-├── requirements.txt
-└── README.md
-```
-
-## Instalação
-
-1. Clone o repositório:
+2. Clone o repositório:
 
    ```bash
    git clone https://github.com/daks-2k25/API-BAIXAR-YOUTUBE.git
    cd API-BAIXAR-YOUTUBE
    ```
 
-2. (Opcional) Crie e ative um ambiente virtual:
+3. Dê dois cliques em **`iniciar.bat`**. Na primeira vez ele instala as dependências do Python. Depois disso, o painel abre sozinho no navegador em `http://localhost:5000`.
 
-   ```bash
-   python -m venv venv
-   # Windows
-   venv\Scripts\activate
-   # Linux/macOS
-   source venv/bin/activate
-   ```
+## Funcionalidades
 
-3. Instale as dependências:
+- **Painel web** em HTML, CSS e JavaScript puros, servido pela própria aplicação
+- Download de vídeo em **MP4** com **escolha de resolução** (360p, 480p, 720p ou 1080p), em H.264 para abrir em qualquer player
+- Extração de áudio em **MP3** (192 kbps)
+- **Até 3 downloads ao mesmo tempo**, com acompanhamento de progresso
+- **Nova tentativa automática** quando o YouTube falha momentaneamente
+- Links com playlist (`&list=...`) baixam só o vídeo, e não a playlist inteira
+- Arquivos salvos com o **título do vídeo** no nome
+- **Conversão de HEIC para JPG**
+- **Limpeza automática**: o arquivo é apagado depois de baixado, ou após 30 minutos se ninguém baixar
+- **Executável para Windows**, que não precisa de Python instalado
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+## Usando o painel
 
-4. Instale o **FFmpeg** e garanta que ele esteja no `PATH`:
-   - Windows: `winget install ffmpeg` (ou baixe em [ffmpeg.org](https://ffmpeg.org/download.html))
-   - Linux: `sudo apt install ffmpeg`
-   - macOS: `brew install ffmpeg`
+- **YouTube:** cole o link, escolha MP4 ou MP3 e a resolução, e clique em **Baixar agora**. Quando a barra completar, clique em **Salvar arquivo**.
+- **HEIC → JPG:** arraste a foto ou clique para escolher. O JPG é baixado sozinho.
+- **Para fechar:** use o botão **Encerrar programa** no fim do painel. Se o painel ficar fechado por 3 minutos e não houver downloads em andamento, o programa fecha sozinho.
 
-## Como executar
+O programa roda sem janela preta. Se clicar de novo com ele já aberto, só o navegador abre. As mensagens do programa ficam no arquivo `BaixarYouTube.log`, ao lado do programa, útil se algo der errado.
+
+## Estrutura do projeto
+
+```
+API-BAIXAR-YOUTUBE/
+├── iniciar.bat          # Dois cliques: abre o painel no navegador
+├── app.py               # API (Flask) + inicialização
+├── painel/              # Painel web (index.html, style.css, script.js)
+│                        # + logo.svg, favicon.svg e icone.ico
+├── servicos/
+│   ├── caminhos.py      # Pastas do projeto (funciona também dentro do .exe)
+│   ├── downloader.py    # Fila de downloads (yt-dlp)
+│   ├── conversor.py     # Conversão de HEIC para JPG (FFmpeg)
+│   └── limpeza.py       # Apaga arquivos esquecidos após 30 minutos
+├── ferramentas/
+│   └── gerar_exe.bat    # Gera o executável (PyInstaller)
+├── requirements.txt
+└── README.md
+```
+
+Ao rodar, a aplicação cria a pasta `downloads/` (arquivos temporários) e o `BaixarYouTube.log`. O `gerar_exe.bat` cria a pasta `BaixarYouTube/` e o atalho `Baixar YouTube.lnk`. Nada disso vai para o Git.
+
+## Gerar o executável (Windows)
+
+1. Dê dois cliques em `ferramentas\gerar_exe.bat`. Ele instala o PyInstaller, gera o programa na pasta `BaixarYouTube\` e cria o atalho **Baixar YouTube** na pasta principal.
+2. Dê dois cliques no atalho **Baixar YouTube**.
+
+O programa é gerado como pasta, e não como um `.exe` único, porque assim abre bem mais rápido. Para levar para outro PC, copie a pasta `BaixarYouTube\` inteira. Sempre que alterar o código, gere o executável de novo.
+
+O FFmpeg não vai dentro do executável: ele precisa estar instalado no PC, ou o `ffmpeg.exe` precisa ficar dentro da pasta `BaixarYouTube\`.
+
+## Rodando em outros sistemas (Linux/macOS)
+
+Instale o Python 3 e o FFmpeg (`sudo apt install ffmpeg` ou `brew install ffmpeg`), depois:
 
 ```bash
+pip install -r requirements.txt
 python app.py
 ```
 
-A API sobe em `http://localhost:5000`.
+## API
 
-## Endpoints
+A aplicação roda em `http://localhost:5000`.
 
 ### `POST /api/download`
 
 Coloca um vídeo na fila de download.
 
-**Body (JSON):**
-
-| Campo     | Tipo   | Obrigatório | Descrição                                          |
-|-----------|--------|-------------|----------------------------------------------------|
-| `url`     | string | Sim         | URL do vídeo                                       |
-| `formato` | string | Não         | `mp4` (padrão) ou `mp3`                            |
-| `qualidade` | string | Não       | Resolução máxima do MP4: `360p`, `480p`, `720p` (padrão) ou `1080p`. Ignorado no MP3 |
-| `id`      | string | Não         | ID próprio do download: letras, números, `-` e `_`, até 64 caracteres (se omitido, gera um UUID) |
-
-**Exemplo:**
+| Campo       | Tipo   | Obrigatório | Descrição |
+|-------------|--------|-------------|-----------|
+| `url`       | string | Sim         | URL do vídeo |
+| `formato`   | string | Não         | `mp4` (padrão) ou `mp3` |
+| `qualidade` | string | Não         | Resolução máxima do MP4: `360p`, `480p`, `720p` (padrão) ou `1080p`. Ignorado no MP3 |
+| `id`        | string | Não         | ID próprio do download: letras, números, `-` e `_`, até 64 caracteres. Se omitido, gera um UUID |
 
 ```bash
 curl -X POST http://localhost:5000/api/download \
@@ -107,7 +116,7 @@ curl -X POST http://localhost:5000/api/download \
 }
 ```
 
-**Resposta `400 Bad Request`**: quando falta a URL ou quando `formato`, `qualidade` ou `id` são inválidos.
+**Resposta `400 Bad Request`** quando falta a URL ou quando `formato`, `qualidade` ou `id` são inválidos:
 
 ```json
 { "erro": "Qualidade inválida. Opções: 360p, 480p, 720p, 1080p." }
@@ -115,88 +124,64 @@ curl -X POST http://localhost:5000/api/download \
 
 Se o vídeo não tiver a resolução pedida, a API baixa a maior disponível abaixo dela.
 
----
-
 ### `GET /api/qualidades`
 
-Lista as resoluções aceitas, útil para montar o seletor no frontend.
+Lista as resoluções aceitas.
 
 ```json
 { "qualidades": ["360p", "480p", "720p", "1080p"], "padrao": "720p" }
 ```
 
----
-
 ### `GET /api/progresso/<id>`
 
-Retorna o status atual do download.
-
-```bash
-curl http://localhost:5000/api/progresso/3f2b8c1e-....
-```
+Retorna o status do download. O `titulo` aparece quando o download fica pronto.
 
 ```json
-{ "id": "3f2b8c1e-....", "status": "45.3%" }
+{ "id": "3f2b8c1e-....", "status": "45.3%", "titulo": null }
 ```
 
-Valores possíveis de `status`:
-
-| Status                   | Significado                                   |
-|--------------------------|-----------------------------------------------|
-| `Na fila...`             | Aguardando a vez na fila                      |
-| `Baixando...`            | Download iniciado                             |
-| `xx.x%`                  | Progresso do download                         |
-| `Processando arquivo...` | Download concluído, convertendo/mesclando     |
-| `Pronto`                 | Arquivo disponível para baixar                |
-| `Erro`                   | Falha no download                             |
+| Status                   | Significado |
+|--------------------------|-------------|
+| `Na fila...`             | Aguardando a vez na fila |
+| `Baixando...`            | Download iniciado |
+| `xx.x%`                  | Progresso do download |
+| `Processando arquivo...` | Download concluído, convertendo/juntando vídeo e áudio |
+| `Pronto`                 | Arquivo disponível para baixar |
+| `Erro`                   | Falha no download (depois de 2 tentativas) |
 | `Desconhecido`           | ID não encontrado, arquivo já baixado ou expirado (30 min) |
-
----
 
 ### `GET /api/arquivo/<id>`
 
-Baixa o arquivo final (`.mp4` ou `.mp3`). Depois do envio, o arquivo é **removido do servidor** e o ID deixa de existir.
+Baixa o arquivo final (`.mp4` ou `.mp3`), com o título do vídeo no nome. Depois do envio, o arquivo é apagado e o ID deixa de existir.
 
 ```bash
 curl -OJ http://localhost:5000/api/arquivo/3f2b8c1e-....
 ```
 
-**Resposta `404 Not Found`** se o arquivo ainda não estiver pronto ou já tiver sido baixado:
-
-```json
-{ "erro": "Arquivo ainda não está pronto ou já foi baixado." }
-```
-
----
+Responde `404` se o arquivo ainda não estiver pronto ou já tiver sido baixado.
 
 ### `POST /api/converter/heic`
 
-Converte uma imagem HEIC para JPG e devolve o JPG para download. Envie o arquivo como `multipart/form-data` no campo `arquivo`.
+Converte uma imagem HEIC para JPG. Envie o arquivo como `multipart/form-data` no campo `arquivo`; a resposta é o JPG.
 
 ```bash
-curl -X POST http://localhost:5000/api/converter/heic   -F "arquivo=@foto.heic" -OJ
+curl -X POST http://localhost:5000/api/converter/heic \
+  -F "arquivo=@foto.heic" -OJ
 ```
 
-A resposta `200` é o arquivo `foto.jpg`. Os arquivos temporários são apagados do servidor logo após o envio.
+| Código | Quando |
+|--------|--------|
+| `400`  | Nenhum arquivo enviado no campo `arquivo` |
+| `500`  | Falha na conversão (o arquivo não é um HEIC válido) |
 
-**Erros:**
+### `POST /api/ping` e `POST /api/encerrar`
 
-| Código | Quando                                                 |
-|--------|--------------------------------------------------------|
-| `400`  | Nenhum arquivo enviado no campo `arquivo`              |
-| `500`  | Falha na conversão (o arquivo não é um HEIC válido)    |
-
-## Fluxo de uso (download de vídeo)
-
-1. Envie a URL com `POST /api/download` e guarde o `id` retornado.
-2. Consulte `GET /api/progresso/<id>` periodicamente até o status ser `Pronto`.
-3. Baixe o arquivo com `GET /api/arquivo/<id>`.
+Usadas pelo painel: o `ping` avisa a cada 30 segundos que o painel continua aberto, e o `encerrar` fecha o programa.
 
 ## Observações
 
-- O status dos downloads fica em memória: ao reiniciar a API, a fila e os status são perdidos.
-- Arquivos prontos que não forem baixados em 30 minutos são apagados automaticamente.
-- A API roda em modo `debug` por padrão; para produção, use um servidor WSGI (ex.: Gunicorn ou Waitress) e desative o debug.
+- O status dos downloads fica em memória: ao fechar o programa, a fila e os status são perdidos.
+- O servidor embutido do Flask é para uso local. Para hospedar em um servidor, use um servidor WSGI (ex.: Gunicorn ou Waitress) com **um único processo**, porque a fila fica em memória.
 - Respeite os termos de uso das plataformas e os direitos autorais do conteúdo baixado.
 
 ## Licença
