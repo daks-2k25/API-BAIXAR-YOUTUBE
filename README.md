@@ -4,24 +4,19 @@ Aplicação em Python para baixar vídeos do YouTube em **MP4** ou extrair o áu
 
 ## Início rápido (Windows)
 
-1. Instale o que o projeto precisa (só na primeira vez):
+1. Baixe o projeto: **Code → Download ZIP** no GitHub (e descompacte) ou `git clone https://github.com/daks-2k25/API-BAIXAR-YOUTUBE.git`.
+2. Dê dois cliques em **`iniciar.bat`**.
 
-   ```powershell
-   winget install Python.Python.3.13
-   winget install ffmpeg
-   winget install DenoLand.Deno
-   ```
+Pronto. **Na primeira vez**, ele instala sozinho o que estiver faltando no PC, usando o winget (que já vem no Windows 10 e 11):
 
-   O **Deno** é opcional, mas recomendado: o yt-dlp usa ele para ler o YouTube, e sem ele alguns vídeos podem falhar.
+- **Python**
+- **FFmpeg**: junta vídeo e áudio, gera MP3 e converte HEIC
+- **Deno**: o yt-dlp usa para ler o YouTube
+- as **bibliotecas do Python** (Flask, yt-dlp...)
 
-2. Clone o repositório:
+Isso leva alguns minutos e mostra o andamento numa janela. **Nas próximas vezes**, ele vê que está tudo pronto e abre o painel no navegador em cerca de 2 segundos. O yt-dlp é atualizado automaticamente uma vez por dia, porque o YouTube muda com frequência.
 
-   ```bash
-   git clone https://github.com/daks-2k25/API-BAIXAR-YOUTUBE.git
-   cd API-BAIXAR-YOUTUBE
-   ```
-
-3. Dê dois cliques em **`iniciar.bat`**. Na primeira vez ele instala as dependências do Python. Depois disso, o painel abre sozinho no navegador em `http://localhost:5000`.
+> Se o Windows mostrar "O Windows protegeu o computador" ao abrir o `iniciar.bat` baixado da internet, clique em **Mais informações → Executar assim mesmo**.
 
 ## Funcionalidades
 
@@ -58,6 +53,7 @@ API-BAIXAR-YOUTUBE/
 │   ├── conversor.py     # Conversão de HEIC para JPG (FFmpeg)
 │   └── limpeza.py       # Apaga arquivos esquecidos após 30 minutos
 ├── ferramentas/
+│   ├── iniciar.ps1      # Usado pelo iniciar.bat: instala o que faltar e abre o programa
 │   └── gerar_exe.bat    # Gera o executável (PyInstaller)
 ├── requirements.txt
 └── README.md
