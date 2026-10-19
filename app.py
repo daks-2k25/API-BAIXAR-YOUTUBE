@@ -4,17 +4,24 @@ from werkzeug.wsgi import ClosingIterator
 import os
 import re
 import socket
+import subprocess
 import sys
 import threading
 import time
 import uuid
 import webbrowser
+from urllib.parse import urlparse, parse_qs
 
 # Importando as ferramentas da pasta servicos/
 from servicos.caminhos import PASTA_DOWNLOADS, PASTA_PAINEL
-from servicos.downloader import adicionar_fila, status_download, titulos_download, esquecer_download
+from servicos import atualizador
+atualizador.usar_versao_atualizada()  # Precisa vir antes de qualquer import do yt-dlp
+from servicos.downloader import (
+    STATUS_FINAIS, adicionar_fila, arquivos_salvos, cancelar_download,
+    status_download, titulos_download,
+)
 from servicos.conversor import converter_heic_para_jpg
-import servicos.limpeza  # Inicia a limpeza automática de arquivos esquecidos
+from servicos.informacoes import obter_informacoes
 
 # O painel web (pasta painel/) é servido pela própria API em http://localhost:5000
 app = Flask(__name__, static_folder=PASTA_PAINEL, static_url_path="")
@@ -35,9 +42,42 @@ def ao_terminar_envio(resposta, funcao):
     resposta.response = ClosingIterator(resposta.response, funcao)
     return resposta
 
-def nome_de_arquivo_seguro(texto):
-    """Tira do título os caracteres que o Windows não aceita em nome de arquivo."""
-    return re.sub(r'[\\/:*?"<>|]', '', texto).strip()[:150] or "download"
+def ler_tempo(valor):
+    """Converte "1:20", "1:02:05" ou 80 em segundos. Vazio -> None."""
+    if valor is None or str(valor).strip() == "":
+        return None
+    partes = str(valor).strip().split(":")
+    if len(partes) > 3:
+        raise ValueError("tempo inválido")
+    segundos = 0.0
+    for parte in partes:
+        numero = float(parte)
+        if numero < 0:
+            raise ValueError("tempo negativo")
+        segundos = segundos * 60 + numero
+    return segundos
+
+
+def e_playlist_sem_video(url):
+    """True quando o link é de uma playlist inteira (ex.: youtube.com/playlist?list=...).
+    Um vídeo aberto dentro de uma playlist (watch?v=...&list=...) é aceito:
+    o downloader baixa só aquele vídeo."""
+    try:
+        partes = urlparse(str(url).strip())
+    except ValueError:
+        return False
+
+    parametros = parse_qs(partes.query)
+    if "list" not in parametros:
+        return False
+
+    host = (partes.hostname or "").lower()
+    tem_video = (
+        "v" in parametros
+        or (host.endswith("youtu.be") and len(partes.path) > 1)
+        or partes.path.startswith(("/shorts/", "/live/", "/embed/"))
+    )
+    return not tem_video
 
 
 @app.route('/')
@@ -62,6 +102,9 @@ def download_api():
     if formato not in ('mp4', 'mp3'):
         return jsonify({"erro": "Formato inválido. Use 'mp4' ou 'mp3'."}), 400
 
+    if e_playlist_sem_video(url):
+        return jsonify({"erro": "Este link é de uma playlist. Playlists não são permitidas: envie o link de um vídeo só."}), 400
+
     if not PADRAO_ID.match(id_download):
         return jsonify({"erro": "ID inválido. Use só letras, números, '-' e '_' (até 64 caracteres)."}), 400
 
@@ -75,18 +118,49 @@ def download_api():
             "erro": f"Qualidade inválida. Opções: {', '.join(f'{q}p' for q in QUALIDADES_PERMITIDAS)}."
         }), 400
 
-    extensao = "mp3" if formato == "mp3" else "mp4"
-    caminho_final = os.path.join(PASTA_DOWNLOADS, f"{id_download}.{extensao}")
+    # Trecho opcional: "inicio" e "fim" como "1:20" (ou segundos)
+    try:
+        inicio = ler_tempo(dados.get('inicio'))
+        fim = ler_tempo(dados.get('fim'))
+    except ValueError:
+        return jsonify({"erro": "Tempo do trecho inválido. Use o formato 1:20 (minutos:segundos)."}), 400
 
-    adicionar_fila(url, formato, qualidade, id_download, caminho_final)
+    trecho = None
+    if inicio is not None or fim is not None:
+        inicio = inicio or 0
+        fim = fim if fim is not None else float("inf")  # sem fim: até o final do vídeo
+        if fim <= inicio:
+            return jsonify({"erro": "O fim do trecho precisa ser depois do início."}), 400
+        trecho = (inicio, fim)
+
+    adicionar_fila(url, formato, qualidade, id_download, trecho)
 
     return jsonify({
         "mensagem": "Vídeo enfileirado com sucesso!",
         "id": id_download,
         "formato": formato,
         "qualidade": f"{qualidade}p" if formato == "mp4" else None,
+        "trecho": {"inicio": trecho[0], "fim": None if trecho[1] == float("inf") else trecho[1]} if trecho else None,
         "status": "Na fila..."
     }), 202
+
+
+@app.route('/api/info', methods=['GET'])
+def info_api():
+    # Prévia do vídeo (título, canal, duração, miniatura) antes de baixar
+    url = request.args.get('url', '').strip()
+
+    if not url:
+        return jsonify({"erro": "Informe a URL do vídeo."}), 400
+
+    if e_playlist_sem_video(url):
+        return jsonify({"erro": "Este link é de uma playlist."}), 400
+
+    try:
+        return jsonify(obter_informacoes(url))
+    except Exception as e:
+        print(f"[INFO] Não foi possível obter a prévia de {url}: {e}")
+        return jsonify({"erro": "Não encontramos esse vídeo. Confira o link."}), 404
 
 
 @app.route('/api/qualidades', methods=['GET'])
@@ -100,38 +174,41 @@ def qualidades_api():
 @app.route('/api/progresso/<id_download>', methods=['GET'])
 def progresso_api(id_download):
     status = status_download.get(id_download, "Desconhecido")
-    return jsonify({"id": id_download, "status": status, "titulo": titulos_download.get(id_download)})
+    caminho = arquivos_salvos.get(id_download)
+    return jsonify({
+        "id": id_download,
+        "status": status,
+        "titulo": titulos_download.get(id_download),
+        "arquivo": os.path.basename(caminho) if caminho else None,  # nome do arquivo na pasta Downloads
+    })
+
+
+@app.route('/api/cancelar/<id_download>', methods=['POST'])
+def cancelar_api(id_download):
+    if not cancelar_download(id_download):
+        return jsonify({"erro": "Esse download não existe ou já terminou."}), 404
+    return jsonify({"mensagem": "Cancelando...", "id": id_download})
+
+
+@app.route('/api/mostrar/<id_download>', methods=['POST'])
+def mostrar_na_pasta_api(id_download):
+    # Abre o Explorador de Arquivos com o arquivo baixado selecionado
+    caminho = arquivos_salvos.get(id_download)
+    if not caminho or not os.path.exists(caminho):
+        return jsonify({"erro": "Arquivo não encontrado (foi movido ou apagado?)."}), 404
+    if sys.platform == "win32":
+        subprocess.Popen(f'explorer /select,"{caminho}"')
+    return jsonify({"mensagem": "Pasta aberta."})
+
 
 @app.route('/api/arquivo/<id_download>', methods=['GET'])
 def baixar_arquivo_api(id_download):
-    if not PADRAO_ID.match(id_download):
-        return jsonify({"erro": "ID inválido."}), 400
-
-    caminho_mp4 = os.path.join(PASTA_DOWNLOADS, f"{id_download}.mp4")
-    caminho_mp3 = os.path.join(PASTA_DOWNLOADS, f"{id_download}.mp3")
-    
-    caminho_arquivo = None
-    if os.path.exists(caminho_mp4):
-        caminho_arquivo = caminho_mp4
-    elif os.path.exists(caminho_mp3):
-        caminho_arquivo = caminho_mp3
-
-    if caminho_arquivo and os.path.exists(caminho_arquivo):
-        # Entrega com o título do vídeo no nome (ex.: "Imagine Dragons - Bones.mp4")
-        extensao = caminho_arquivo.rsplit('.', 1)[1]
-        titulo = nome_de_arquivo_seguro(titulos_download.get(id_download, id_download))
-        resposta = send_file(caminho_arquivo, as_attachment=True, download_name=f"{titulo}.{extensao}")
-
-        def remover_arquivo():
-            try:
-                os.remove(caminho_arquivo)
-                esquecer_download(id_download)
-            except Exception as e:
-                print(f"Erro ao limpar arquivo: {e}")
-
-        return ao_terminar_envio(resposta, remover_arquivo)
-    
-    return jsonify({"erro": "Arquivo ainda não está pronto ou já foi baixado."}), 404
+    # O arquivo já fica salvo na pasta Downloads; esta rota é para quem usa a API
+    # de outro programa e quer receber o arquivo pela resposta HTTP
+    caminho = arquivos_salvos.get(id_download)
+    if not caminho or not os.path.exists(caminho):
+        return jsonify({"erro": "Arquivo ainda não está pronto ou não foi encontrado."}), 404
+    return send_file(caminho, as_attachment=True, download_name=os.path.basename(caminho))
 
 
 # ==========================================
@@ -232,7 +309,7 @@ def encerrar_api():
 def fechar_quando_ninguem_usar():
     while True:
         time.sleep(30)
-        baixando = any(st not in ("Pronto", "Erro") for st in list(status_download.values()))
+        baixando = any(st not in STATUS_FINAIS for st in list(status_download.values()))
         if not baixando and time.time() - ultimo_sinal_do_painel > FECHAR_SEM_PAINEL_SEGUNDOS:
             encerrar_programa()
 
@@ -253,6 +330,7 @@ if __name__ == "__main__":
     # Abre o painel no navegador assim que o servidor estiver pronto
     threading.Thread(target=abrir_navegador_quando_pronto, daemon=True).start()
     threading.Thread(target=fechar_quando_ninguem_usar, daemon=True).start()
+    atualizador.verificar_atualizacao()  # Só faz algo dentro do .exe, uma vez por dia
 
     # Sem debug: o modo debug reinicia o processo e não funciona dentro do .exe
     app.run(host="127.0.0.1", port=PORTA, debug=False)

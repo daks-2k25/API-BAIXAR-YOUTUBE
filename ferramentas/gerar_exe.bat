@@ -13,7 +13,14 @@ echo Instalando dependências e o PyInstaller...
 python -m pip install -q --disable-pip-version-check -r requirements.txt pyinstaller
 
 rem Apaga a versão antiga para não confundir com uma geração que falhou
-if exist "%PROGRAMA%\BaixarYouTube.exe" del "%PROGRAMA%\BaixarYouTube.exe"
+if exist "%PROGRAMA%\BaixarYouTube.exe" del "%PROGRAMA%\BaixarYouTube.exe" 2>nul
+if exist "%PROGRAMA%\BaixarYouTube.exe" (
+    echo.
+    echo [ERRO] O programa está aberto. Feche-o pelo botão "Encerrar programa"
+    echo        no painel e rode este arquivo de novo.
+    pause
+    exit /b 1
+)
 
 echo.
 echo Gerando o programa (pode levar alguns minutos)...

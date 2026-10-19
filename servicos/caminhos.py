@@ -14,7 +14,38 @@ else:
     PASTA_BASE = PASTA_RECURSOS
 
 PASTA_PAINEL = os.path.join(PASTA_RECURSOS, "painel")
+# Arquivos temporários enquanto o download acontece
 PASTA_DOWNLOADS = os.path.join(PASTA_BASE, "downloads")
+
+
+def _pasta_downloads_do_usuario():
+    """A pasta Downloads do Windows, mesmo se o usuário a moveu (outro disco, OneDrive...)."""
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            import uuid
+
+            # FOLDERID_Downloads
+            guid = uuid.UUID("{374DE290-123F-4565-9164-39C4925E467B}")
+
+            class GUID(ctypes.Structure):
+                _fields_ = [("data", ctypes.c_byte * 16)]
+
+            caminho = ctypes.c_wchar_p()
+            resultado = ctypes.windll.shell32.SHGetKnownFolderPath(
+                ctypes.byref(GUID((ctypes.c_byte * 16)(*guid.bytes_le))), 0, None, ctypes.byref(caminho)
+            )
+            if resultado == 0 and caminho.value:
+                pasta = caminho.value
+                ctypes.windll.ole32.CoTaskMemFree(caminho)
+                return pasta
+        except Exception:
+            pass
+    return os.path.join(os.path.expanduser("~"), "Downloads")
+
+
+# Onde os vídeos e músicas prontos são salvos
+PASTA_DESTINO = _pasta_downloads_do_usuario()
 
 os.makedirs(PASTA_DOWNLOADS, exist_ok=True)
 
