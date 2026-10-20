@@ -14,7 +14,9 @@ Pronto. **Na primeira vez**, ele instala sozinho o que estiver faltando no PC, u
 - **Deno**: o yt-dlp usa para ler o YouTube
 - as **bibliotecas do Python** (Flask, yt-dlp...)
 
-Isso leva alguns minutos e mostra o andamento numa janela. **Nas próximas vezes**, ele vê que está tudo pronto e abre o painel no navegador em cerca de 2 segundos. O yt-dlp é atualizado automaticamente uma vez por dia, porque o YouTube muda com frequência.
+Isso leva alguns minutos e mostra o andamento numa janela. **Nas próximas vezes**, ele vê que está tudo pronto e abre o painel no navegador em cerca de 2 segundos.
+
+No primeiro clique ele também cria o atalho **Baixar YouTube**, com a logo, na **Área de Trabalho**. Depois é só usar o atalho: ele abre direto o painel, sem janela preta. Se você apagar o atalho, ele não é criado de novo; se mover a pasta do projeto, o atalho é corrigido no próximo uso do `iniciar.bat`. O yt-dlp é atualizado automaticamente uma vez por dia, porque o YouTube muda com frequência.
 
 > Se o Windows mostrar "O Windows protegeu o computador" ao abrir o `iniciar.bat` baixado da internet, clique em **Mais informações → Executar assim mesmo**.
 
@@ -58,7 +60,7 @@ API-BAIXAR-YOUTUBE/
 │   ├── informacoes.py   # Prévia do vídeo (título, canal, duração, miniatura)
 │   └── conversor.py     # Conversão de HEIC para JPG (FFmpeg)
 ├── ferramentas/
-│   ├── iniciar.ps1      # Usado pelo iniciar.bat: instala o que faltar e abre o programa
+│   ├── iniciar.ps1      # Usado pelo iniciar.bat: instala o que faltar, cria o atalho e abre o programa
 │   └── gerar_exe.bat    # Gera o executável (PyInstaller)
 ├── requirements.txt
 └── README.md

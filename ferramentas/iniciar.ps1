@@ -48,6 +48,34 @@ function Instalar-Com-Winget($id, $nome) {
     $script:instalouAlgo = $true
 }
 
+function Criar-Atalho {
+    # GetFolderPath acha a Área de Trabalho certa, mesmo quando ela está no OneDrive
+    $areaDeTrabalho = [Environment]::GetFolderPath("Desktop")
+    $atalho = Join-Path $areaDeTrabalho "Baixar YouTube.lnk"
+    $alvo = Join-Path $Projeto "iniciar.bat"
+    $marca = Join-Path $Projeto ".atalho_criado"
+    $shell = New-Object -ComObject WScript.Shell
+
+    if (Test-Path $atalho) {
+        # Já existe: só corrige se a pasta do projeto mudou de lugar
+        $existente = $shell.CreateShortcut($atalho)
+        if ($existente.TargetPath -eq $alvo) { return }
+    }
+    elseif (Test-Path $marca) {
+        return # A pessoa apagou o atalho de propósito: não cria de novo
+    }
+
+    $novo = $shell.CreateShortcut($atalho)
+    $novo.TargetPath = $alvo
+    $novo.WorkingDirectory = $Projeto
+    $novo.IconLocation = Join-Path $Projeto "painel\icone.ico"
+    $novo.Description = "Abre o painel do Baixar YouTube"
+    $novo.WindowStyle = 7 # minimizado: só o navegador aparece
+    $novo.Save()
+    Set-Content $marca (Get-Date).ToString("yyyy-MM-dd")
+    Escrever "Atalho `"Baixar YouTube`" criado na Área de Trabalho." Green
+}
+
 function Encontrar-Python {
     # Testa cada Python possível e devolve o caminho real do primeiro que funcionar
     # (o "python" da Microsoft Store pode ser só um atalho que não roda nada)
@@ -116,7 +144,10 @@ try {
         if ($LASTEXITCODE -eq 0) { Set-Content $marca $hoje }
     }
 
-    # 6. Abre o programa sem janela; ele mesmo abre o painel no navegador
+    # 6. Atalho "Baixar YouTube" na Área de Trabalho (criado uma vez só)
+    try { Criar-Atalho } catch { Escrever "[AVISO] Não consegui criar o atalho na Área de Trabalho: $($_.Exception.Message)" Yellow }
+
+    # 7. Abre o programa sem janela; ele mesmo abre o painel no navegador
     if ($instalouAlgo) { Escrever "`nTudo pronto! Abrindo o painel no navegador..." Green }
     Start-Process -FilePath $pythonw -ArgumentList "app.py" -WorkingDirectory $Projeto -ErrorAction Stop
     if ($instalouAlgo) { Start-Sleep -Seconds 3 }
