@@ -5,7 +5,15 @@
 # e as bibliotecas do Python) usando o winget, que já vem no Windows 10 e 11.
 # Nas próximas vezes, vê que está tudo pronto e abre direto.
 
-$ErrorActionPreference = "Stop"
+# "Continue" e não "Stop": no PowerShell 5.1, com "Stop", qualquer texto que um
+# programa escreva no stderr (ex.: o Traceback do Python quando falta uma
+# biblioteca) vira uma exceção e interrompe o script. Os erros de verdade são
+# conferidos pelo código de saída ($LASTEXITCODE) de cada comando.
+$ErrorActionPreference = "Continue"
+
+# winget e pip escrevem em UTF-8; sem isso os acentos saem embaralhados
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 $Projeto = Split-Path -Parent $PSScriptRoot
 Set-Location $Projeto
 $Host.UI.RawUI.WindowTitle = "Baixar YouTube"
@@ -110,7 +118,7 @@ try {
 
     # 6. Abre o programa sem janela; ele mesmo abre o painel no navegador
     if ($instalouAlgo) { Escrever "`nTudo pronto! Abrindo o painel no navegador..." Green }
-    Start-Process -FilePath $pythonw -ArgumentList "app.py" -WorkingDirectory $Projeto
+    Start-Process -FilePath $pythonw -ArgumentList "app.py" -WorkingDirectory $Projeto -ErrorAction Stop
     if ($instalouAlgo) { Start-Sleep -Seconds 3 }
 }
 catch {
