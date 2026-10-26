@@ -8,7 +8,7 @@
     <link rel="icon" href="icone.ico" sizes="any" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="style.css" />
@@ -18,10 +18,24 @@
 
     <main class="container">
       <header>
-        <img class="logo" src="logo.svg" alt="Logo do Baixar YouTube" />
-        <h1>Baixar YouTube | Converter Foto</h1>
+        <!-- Sino de notificações (a bolinha aparece quando há versão nova) -->
+        <button type="button" id="sino" class="sino" title="Notificações" aria-label="Notificações">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+          <span id="sino-ponto" class="sino-ponto" hidden></span>
+        </button>
+        <div id="notificacoes" class="notificacoes escondido">
+          <strong class="notificacoes-titulo">Notificações</strong>
+          <div id="notificacoes-conteudo"></div>
+        </div>
+
+        <img class="logo" src="logo.webp" alt="Logo do Baixar YouTube" />
+        <span class="etiqueta">Baixar YouTube · Converter Foto</span>
+        <h1>Seus vídeos e músicas, <span>salvos em segundos.</span></h1>
         <p class="subtitulo">
-          Vídeos em MP4, músicas em MP3 e fotos HEIC para JPG.
+          Vídeos em MP4, músicas em MP3 e fotos HEIC para JPG, direto na sua pasta Downloads.
         </p>
       </header>
 
@@ -29,9 +43,12 @@
       <div id="aviso-atualizacao" class="atualizacao escondido">
         <strong id="atualizacao-titulo"></strong>
         <ul id="atualizacao-novidades"></ul>
-        <button type="button" id="botao-atualizar" class="botao-atualizar">
-          ⬆ Atualizar agora
-        </button>
+        <div class="atualizacao-botoes">
+          <button type="button" id="botao-atualizar" class="botao-atualizar">
+            ⬆ Atualizar agora
+          </button>
+          <button type="button" id="botao-depois" class="botao-depois">Depois</button>
+        </div>
         <p id="atualizacao-mensagem" class="atualizacao-mensagem"></p>
       </div>
 
@@ -131,11 +148,22 @@
       </section>
 
       <footer>
-        <p>Os vídeos e músicas são salvos na sua pasta Downloads.</p>
         <p id="versao" class="versao"></p>
         <button id="encerrar" class="encerrar">⏻ Encerrar programa</button>
       </footer>
     </main>
+
+    <!-- Notificação que desliza no canto quando sai uma versão nova -->
+    <div id="toast" class="toast escondido" role="status" aria-live="polite">
+      <div class="toast-texto">
+        <strong id="toast-titulo"></strong>
+        <p id="toast-descricao"></p>
+      </div>
+      <div class="atualizacao-botoes">
+        <button type="button" id="toast-atualizar" class="botao-atualizar">⬆ Atualizar agora</button>
+        <button type="button" id="toast-depois" class="botao-depois">Depois</button>
+      </div>
+    </div>
 
     <script src="script.js"></script>
   </body>

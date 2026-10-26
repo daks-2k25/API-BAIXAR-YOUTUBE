@@ -36,7 +36,8 @@ rem           que o modo arquivo único (--onefile)
 rem --noconsole: abre só a janela do programa, sem a janela preta
 rem Arquivos temporários (.spec e build) ficam em ferramentas\compilacao
 rem "uv run --with pyinstaller": usa o PyInstaller só durante a geração
-uv run --no-dev --with pyinstaller python -m PyInstaller --noconfirm --onedir --noconsole --name BaixarYouTube ^
+rem --clean: gera do zero (sem isso, trocar o ícone podia não ter efeito)
+uv run --no-dev --with pyinstaller python -m PyInstaller --noconfirm --clean --onedir --noconsole --name BaixarYouTube ^
     --specpath "%TEMPORARIOS%" ^
     --workpath "%TEMPORARIOS%" ^
     --distpath "%PROJETO%" ^

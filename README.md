@@ -23,6 +23,7 @@ No primeiro clique ele também cria o atalho **Baixar YouTube**, com a logo, na 
 
 - **Janela própria** (não precisa do navegador): fechar a janela fecha o programa
 - **Atualização pelo próprio programa**: quando sai uma versão nova, aparece um aviso com as novidades e o botão **Atualizar agora**
+- **Notificações**: sino 🔔 com bolinha quando há versão nova, notificação no canto da janela e verificação automática a cada 30 minutos com o programa aberto
 - **Prévia do vídeo** ao colar o link: miniatura, título, canal e duração, com opção de assistir ali mesmo para conferir antes de baixar
 - Download de vídeo em **MP4** com **escolha de resolução** (360p, 480p, 720p ou 1080p), em H.264 para abrir em qualquer player
 - Extração de áudio em **MP3** (192 kbps)
@@ -41,7 +42,9 @@ No primeiro clique ele também cria o atalho **Baixar YouTube**, com a logo, na 
 - **Cortar trecho:** clique em **✂ Cortar trecho** e preencha o início e o fim (ex.: `1:20` e `2:05`). Deixe o fim vazio para ir até o final do vídeo.
 - **Cancelar:** cada download tem um botão **✕ Cancelar** enquanto está na fila ou baixando.
 - **HEIC → JPG:** arraste a foto ou clique para escolher. O JPG é salvo na pasta Downloads.
-- **Atualizar:** quando aparecer o aviso de versão nova, clique em **Atualizar agora**. O programa baixa a versão nova, reinicia sozinho e continua com seus arquivos e configurações. A versão instalada aparece no rodapé.
+- **Atualizar:** quando sair uma versão nova, aparece uma notificação no canto da janela, um aviso no topo e uma bolinha no sino 🔔. Clique em **Atualizar agora**: o programa baixa a versão nova, reinicia sozinho e continua com seus arquivos e configurações. Com o programa aberto, ele confere se saiu versão nova a cada 30 minutos. A versão instalada aparece no rodapé.
+- **Depois:** se preferir atualizar mais tarde, clique em **Depois**. A notificação não volta para essa versão (o sino continua com a bolinha, e a atualização fica disponível nele). Se sair uma versão ainda mais nova, o programa avisa de novo.
+- **Sino 🔔:** mostra a atualização disponível ou confirma que você está na versão mais recente, com o botão **Verificar agora**.
 - **Para fechar:** feche a janela. Se ainda houver download em andamento, o programa pergunta antes.
 
 Se clicar no atalho com o programa já aberto, a janela só vem para a frente. As mensagens do programa ficam no arquivo `BaixarYouTube.log`, útil se algo der errado. Se a janela própria não puder ser criada no PC (ex.: sem o componente WebView2 do Windows), o painel abre no navegador, como alternativa.
@@ -68,7 +71,7 @@ API-BAIXAR-YOUTUBE/
 ├── versao.json          # Versão do programa e novidades (usado na atualização)
 ├── pyproject.toml       # Bibliotecas do Python (usado pelo uv)
 ├── painel/              # Painel (index.html, style.css, script.js)
-│                        # + logo.svg, favicon.svg e icone.ico
+│                        # + logo.webp, favicon.svg e icone.ico (ícone do programa)
 ├── servicos/
 │   ├── caminhos.py      # Pastas do projeto e pasta Downloads do usuário
 │   ├── autoatualizacao.py # Botão "Atualizar agora": baixa e instala a versão nova
@@ -76,6 +79,7 @@ API-BAIXAR-YOUTUBE/
 │   ├── downloader.py    # Fila de downloads, corte de trecho e cancelamento (yt-dlp)
 │   ├── informacoes.py   # Prévia do vídeo (título, canal, duração, miniatura)
 │   └── conversor.py     # Conversão de HEIC para JPG (FFmpeg)
+├── logos/               # Identidade visual: logo e ícones em SVG, PNG e WebP
 ├── ferramentas/
 │   ├── iniciar.ps1      # Usado pelo iniciar.bat: instala o que faltar, cria o atalho e abre o programa
 │   └── gerar_exe.bat    # Gera o executável (PyInstaller)
@@ -239,6 +243,10 @@ Versão instalada e, se houver, a versão nova no GitHub. Adicione `?forcar=1` p
 ```
 
 `pode_atualizar` é `false` no programa gerado (`.exe`) e em pastas git fora da `main` ou com alterações locais; `motivo` explica o porquê.
+
+### `POST /api/versao/adiar`
+
+Corpo: `{"versao": "2.1.0"}`. Usado pelo botão **Depois**: o painel não mostra de novo a notificação dessa versão (o `GET /api/versao` passa a responder `"adiada": true`). Fica guardado em `.preferencias.json`.
 
 ### `POST /api/atualizar`
 

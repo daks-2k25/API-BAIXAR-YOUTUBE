@@ -24,7 +24,7 @@ import time
 import urllib.request
 import zipfile
 
-from servicos.caminhos import EXECUTAVEL, PASTA_RECURSOS
+from servicos.caminhos import EXECUTAVEL, PASTA_BASE, PASTA_RECURSOS
 
 REPOSITORIO = "daks-2k25/API-BAIXAR-YOUTUBE"
 RAMO = "main"
@@ -40,7 +40,11 @@ ARQUIVO_MANIFESTO = os.path.join(PASTA_PROJETO, ".arquivos_do_programa.txt")
 PROTEGIDOS = (
     ".git", ".ambiente", ".venv", "downloads", "BaixarYouTube", "atualizacoes",
     "ferramentas/compilacao", ".atalho_criado", ".arquivos_do_programa.txt",
+    ".preferencias.json",
 )
+
+# Guarda a versão que a pessoa mandou "lembrar depois" (fica ao lado do programa)
+ARQUIVO_PREFERENCIAS = os.path.join(PASTA_BASE, ".preferencias.json")
 
 # Guarda a última consulta ao GitHub por alguns minutos
 _cache = {"momento": 0, "dados": None}
@@ -57,6 +61,26 @@ def versao_instalada():
             return json.load(f).get("versao", "0")
     except (OSError, ValueError):
         return "0"
+
+
+def _ler_preferencias():
+    try:
+        with open(ARQUIVO_PREFERENCIAS, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def versao_adiada():
+    """Versão nova que a pessoa mandou avisar depois (não mostra a notificação de novo)."""
+    return _ler_preferencias().get("atualizacao_adiada")
+
+
+def adiar(versao):
+    preferencias = _ler_preferencias()
+    preferencias["atualizacao_adiada"] = str(versao)
+    with open(ARQUIVO_PREFERENCIAS, "w", encoding="utf-8") as f:
+        json.dump(preferencias, f, ensure_ascii=False, indent=2)
 
 
 def _git(*argumentos):

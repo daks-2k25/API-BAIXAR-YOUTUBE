@@ -454,36 +454,155 @@ document.getElementById("encerrar").addEventListener("click", async () => {
 });
 
 // ==========================================
-// ATUALIZAÇÃO DO PROGRAMA
+// ATUALIZAÇÃO DO PROGRAMA E NOTIFICAÇÕES
 // ==========================================
 const avisoAtualizacao = document.getElementById("aviso-atualizacao");
 const botaoAtualizar = document.getElementById("botao-atualizar");
+const botaoDepois = document.getElementById("botao-depois");
 const mensagemAtualizacao = document.getElementById("atualizacao-mensagem");
+const sino = document.getElementById("sino");
+const sinoPonto = document.getElementById("sino-ponto");
+const painelNotificacoes = document.getElementById("notificacoes");
+const conteudoNotificacoes = document.getElementById("notificacoes-conteudo");
+const toast = document.getElementById("toast");
 
-async function verificarAtualizacao() {
-    let dados;
+// Com o programa aberto, confere se saiu versão nova a cada 30 minutos
+const VERIFICAR_A_CADA = 30 * 60 * 1000;
+
+let infoVersao = null;
+let toastMostradoPara = null; // a notificação aparece uma vez por versão
+let atualizando = false;
+
+async function verificarAtualizacao(forcar = false) {
     try {
-        dados = await (await fetch("/api/versao")).json();
+        infoVersao = await (await fetch(`/api/versao${forcar ? "?forcar=1" : ""}`)).json();
     } catch {
         return;
     }
-    document.getElementById("versao").textContent = `Versão ${dados.atual}`;
-    if (!dados.disponivel) return;
+    mostrarVersao();
+}
 
+function mostrarVersao() {
+    const dados = infoVersao;
+    document.getElementById("versao").textContent = `Versão ${dados.atual}`;
+    sinoPonto.hidden = !dados.disponivel;
+    montarPainelNotificacoes();
+    if (!dados.disponivel || atualizando) return;
+
+    // Aviso no topo do painel
     document.getElementById("atualizacao-titulo").textContent = `✨ Nova versão ${dados.nova} disponível`;
-    const lista = document.getElementById("atualizacao-novidades");
+    preencherNovidades(document.getElementById("atualizacao-novidades"), dados.novidades);
+    botaoAtualizar.hidden = !dados.pode_atualizar;
+    mensagemAtualizacao.textContent = dados.pode_atualizar ? "" : dados.motivo;
+
+    // "Depois": o aviso e a notificação somem; o sino continua com a bolinha
+    if (dados.adiada) {
+        avisoAtualizacao.classList.add("escondido");
+        return;
+    }
+    avisoAtualizacao.classList.remove("escondido");
+
+    if (toastMostradoPara !== dados.nova) {
+        toastMostradoPara = dados.nova;
+        document.getElementById("toast-titulo").textContent = `✨ Nova versão ${dados.nova} disponível`;
+        const primeira = dados.novidades[0];
+        document.getElementById("toast-descricao").textContent = primeira
+            ? primeira + (dados.novidades.length > 1 ? " e mais novidades." : "")
+            : "";
+        document.getElementById("toast-atualizar").hidden = !dados.pode_atualizar;
+        toast.classList.remove("escondido");
+    }
+}
+
+function preencherNovidades(lista, novidades) {
     lista.innerHTML = "";
-    dados.novidades.forEach((novidade) => {
+    novidades.forEach((novidade) => {
         const item = document.createElement("li");
         item.textContent = novidade; // textContent: o texto vem de fora
         lista.appendChild(item);
     });
-    botaoAtualizar.hidden = !dados.pode_atualizar;
-    mensagemAtualizacao.textContent = dados.pode_atualizar ? "" : dados.motivo;
-    avisoAtualizacao.classList.remove("escondido");
 }
 
-botaoAtualizar.addEventListener("click", async () => {
+// Conteúdo do painelzinho que abre no sino
+function montarPainelNotificacoes() {
+    const dados = infoVersao;
+    conteudoNotificacoes.innerHTML = "";
+    const item = document.createElement("div");
+    item.className = "notificacao-item";
+
+    if (dados.disponivel) {
+        item.innerHTML = `<strong></strong><ul></ul><div class="atualizacao-botoes"></div>`;
+        item.querySelector("strong").textContent = `✨ Nova versão ${dados.nova} disponível`;
+        preencherNovidades(item.querySelector("ul"), dados.novidades);
+        if (dados.pode_atualizar) {
+            const botao = document.createElement("button");
+            botao.type = "button";
+            botao.className = "botao-atualizar";
+            botao.textContent = "⬆ Atualizar agora";
+            botao.addEventListener("click", iniciarAtualizacao);
+            item.querySelector(".atualizacao-botoes").appendChild(botao);
+        } else {
+            const motivo = document.createElement("p");
+            motivo.textContent = dados.motivo;
+            item.appendChild(motivo);
+        }
+    } else {
+        item.innerHTML = `<p></p><button type="button" class="botao-depois">↻ Verificar agora</button>`;
+        item.querySelector("p").textContent = dados.motivo || `✓ Você está na versão mais recente (${dados.atual}).`;
+        const botaoVerificar = item.querySelector("button");
+        botaoVerificar.addEventListener("click", async () => {
+            botaoVerificar.disabled = true;
+            botaoVerificar.textContent = "Verificando...";
+            await verificarAtualizacao(true);
+        });
+    }
+    conteudoNotificacoes.appendChild(item);
+}
+
+sino.addEventListener("click", (evento) => {
+    evento.stopPropagation();
+    const abrir = painelNotificacoes.classList.contains("escondido");
+    painelNotificacoes.classList.toggle("escondido", !abrir);
+    sino.classList.toggle("aberto", abrir);
+    if (abrir) toast.classList.add("escondido");
+});
+
+// Clicar fora fecha o painelzinho de notificações
+document.addEventListener("click", (evento) => {
+    if (!painelNotificacoes.contains(evento.target)) {
+        painelNotificacoes.classList.add("escondido");
+        sino.classList.remove("aberto");
+    }
+});
+
+async function adiarAtualizacao() {
+    toast.classList.add("escondido");
+    avisoAtualizacao.classList.add("escondido");
+    if (!infoVersao || !infoVersao.nova) return;
+    infoVersao.adiada = true;
+    await fetch("/api/versao/adiar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ versao: infoVersao.nova }),
+    }).catch(() => {});
+}
+
+botaoDepois.addEventListener("click", adiarAtualizacao);
+document.getElementById("toast-depois").addEventListener("click", adiarAtualizacao);
+document.getElementById("toast-atualizar").addEventListener("click", iniciarAtualizacao);
+botaoAtualizar.addEventListener("click", iniciarAtualizacao);
+
+async function iniciarAtualizacao() {
+    if (atualizando) return;
+    atualizando = true;
+
+    // O andamento aparece no aviso do topo
+    toast.classList.add("escondido");
+    painelNotificacoes.classList.add("escondido");
+    avisoAtualizacao.classList.remove("escondido");
+    avisoAtualizacao.scrollIntoView({ behavior: "smooth", block: "start" });
+    botaoDepois.hidden = true;
+    botaoAtualizar.hidden = false;
     botaoAtualizar.disabled = true;
     botaoAtualizar.textContent = "Atualizando...";
     mensagemAtualizacao.textContent = "Baixando a versão nova. Não feche o programa.";
@@ -492,9 +611,11 @@ botaoAtualizar.addEventListener("click", async () => {
     const dados = resposta ? await resposta.json().catch(() => ({})) : {};
 
     if (!resposta || !resposta.ok) {
+        atualizando = false;
         mensagemAtualizacao.textContent = dados.erro || "Não foi possível atualizar. Tente de novo.";
         botaoAtualizar.disabled = false;
         botaoAtualizar.textContent = "⬆ Tentar de novo";
+        botaoDepois.hidden = false;
         return;
     }
 
@@ -515,7 +636,8 @@ botaoAtualizar.addEventListener("click", async () => {
             caiu = true;
         }
     }, 1000);
-});
+}
 
 carregarQualidades();
 verificarAtualizacao();
+setInterval(() => verificarAtualizacao(), VERIFICAR_A_CADA);

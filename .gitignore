@@ -13,3 +13,4 @@ atualizacoes/
 .ambiente/
 uv.lock
 .arquivos_do_programa.txt
+.preferencias.json

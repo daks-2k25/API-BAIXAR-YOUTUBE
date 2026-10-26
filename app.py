@@ -348,7 +348,20 @@ def focar_api():
 @app.route('/api/versao', methods=['GET'])
 def versao_api():
     # Versão instalada e, se houver, a versão nova disponível no GitHub
-    return jsonify(autoatualizacao.verificar(forcar=request.args.get('forcar') == '1'))
+    dados = dict(autoatualizacao.verificar(forcar=request.args.get('forcar') == '1'))
+    # "adiada": a pessoa clicou em "Depois" para esta versão; o painel não insiste
+    dados["adiada"] = bool(dados["disponivel"] and dados["nova"] == autoatualizacao.versao_adiada())
+    return jsonify(dados)
+
+
+@app.route('/api/versao/adiar', methods=['POST'])
+def adiar_versao_api():
+    # Botão "Depois" da notificação: não avisar de novo sobre esta versão
+    versao = (request.get_json(silent=True) or {}).get("versao")
+    if not versao:
+        return jsonify({"erro": "Informe a versão."}), 400
+    autoatualizacao.adiar(versao)
+    return jsonify({"ok": True})
 
 
 @app.route('/api/atualizar', methods=['POST'])
@@ -438,7 +451,7 @@ def abrir_janela():
 
     janela = webview.create_window(
         "Baixar YouTube", ENDERECO_PAINEL,
-        width=760, height=900, min_size=(440, 620), background_color="#050608",
+        width=760, height=900, min_size=(440, 620), background_color="#f3f0ec",
     )
 
     def ao_mostrar():

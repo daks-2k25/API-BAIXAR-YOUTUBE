@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Conceito 04 (três faixas), paleta: sunset -->
+  <g fill="none" stroke-width="44" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M140 128 L256 222 L372 128" stroke="#E8461E"/>
+    <path d="M140 222 L256 316 L372 222" stroke="#FF8A3D"/>
+    <path d="M140 316 L256 410 L372 316" stroke="#FFC23D"/>
+  </g>
+</svg>

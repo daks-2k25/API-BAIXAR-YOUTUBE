@@ -1,17 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <defs>
-    <radialGradient id="planeta" cx="0.35" cy="0.3" r="0.8">
-      <stop offset="0" stop-color="#4fd1ff"/>
-      <stop offset="0.45" stop-color="#1d3bff"/>
-      <stop offset="1" stop-color="#070b2a"/>
-    </radialGradient>
-  </defs>
-  <rect x="2" y="2" width="96" height="96" rx="24" fill="#050816"/>
-  <circle cx="50" cy="52" r="36" fill="url(#planeta)"/>
-  <circle cx="50" cy="52" r="36" fill="none" stroke="#9fe6ff" stroke-width="3" opacity=".8"/>
-  <ellipse cx="50" cy="54" rx="46" ry="11" fill="none" stroke="#7fb2ff" stroke-width="4.5" opacity=".7" transform="rotate(-14 50 54)"/>
-  <g fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M50 32 V68"/>
-    <path d="M37 56 L50 69 L63 56"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Conceito 04 (três faixas), paleta: sunset -->
+  <g fill="none" stroke-width="44" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M140 128 L256 222 L372 128" stroke="#E8461E"/>
+    <path d="M140 222 L256 316 L372 222" stroke="#FF8A3D"/>
+    <path d="M140 316 L256 410 L372 316" stroke="#FFC23D"/>
   </g>
 </svg>
