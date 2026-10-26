@@ -22,7 +22,7 @@ from servicos.downloader import (
     STATUS_FINAIS, adicionar_fila, arquivos_salvos, cancelar_download,
     caminho_sem_sobrescrever, erros_download, nome_de_arquivo_seguro, status_download, titulos_download,
 )
-from servicos.conversor import converter_heic_para_jpg
+from servicos.conversor import FORMATOS, converter_imagem
 from servicos.informacoes import obter_informacoes
 from servicos.sites import mensagem_de_erro
 from servicos import autoatualizacao, preferencias
@@ -217,57 +217,70 @@ def baixar_arquivo_api(id_download):
 
 
 # ==========================================
-# FERRAMENTA 2: CONVERSOR DE HEIC PARA JPG
+# FERRAMENTA 2: CONVERSOR DE FOTOS (HEIC -> JPG, HEIC/JPG/PNG -> WebP)
 # ==========================================
 
+# /api/converter/heic é o endereço antigo (sempre JPG); continua funcionando
 @app.route('/api/converter/heic', methods=['POST'])
-def converter_heic_api():
+@app.route('/api/converter/imagem', methods=['POST'])
+def converter_imagem_api():
     if 'arquivo' not in request.files:
         return jsonify({"erro": "Nenhum arquivo enviado. Use o campo 'arquivo' no form-data."}), 400
 
     arquivo = request.files['arquivo']
-    
+
     if arquivo.filename == '':
         return jsonify({"erro": "Nenhum arquivo selecionado."}), 400
 
-    # Gera um ID para a imagem e salva temporariamente
+    formato = (request.form.get('formato') or request.args.get('formato') or 'jpg').lower()
+    if formato not in FORMATOS:
+        return jsonify({"erro": f"Formato inválido. Use: {', '.join(FORMATOS)}."}), 400
+
+    extensao = arquivo.filename.rsplit('.', 1)[-1].lower() if '.' in arquivo.filename else ''
+    if extensao not in FORMATOS[formato]:
+        aceitos = ", ".join(e.upper() for e in FORMATOS[formato])
+        return jsonify({"erro": f"Para {formato.upper()}, envie uma foto {aceitos}."}), 400
+
+    # Gera um ID para a imagem e salva temporariamente (com a extensão original, que o FFmpeg usa)
     id_conversao = str(uuid.uuid4())
-    caminho_heic = os.path.join(PASTA_DOWNLOADS, f"{id_conversao}.heic")
-    arquivo.save(caminho_heic)
+    caminho_original = os.path.join(PASTA_DOWNLOADS, f"{id_conversao}_original.{extensao}")
+    arquivo.save(caminho_original)
 
-    # Aciona o seu conversor.py
-    caminho_jpg = converter_heic_para_jpg(caminho_heic)
+    caminho_convertido = converter_imagem(
+        caminho_original, formato, os.path.join(PASTA_DOWNLOADS, f"{id_conversao}.{formato}"),
+    )
 
-    if caminho_jpg and os.path.exists(caminho_jpg):
-        nome_download = arquivo.filename.rsplit('.', 1)[0] + ".jpg"
+    if caminho_convertido and os.path.exists(caminho_convertido):
+        nome_sem_extensao = arquivo.filename.rsplit('.', 1)[0]
+        nome_download = f"{nome_sem_extensao}.{formato}"
 
-        # O painel pede ?salvar=1: o JPG vai direto para a pasta Downloads (igual aos vídeos)
+        # O painel pede ?salvar=1: a foto vai direto para a pasta Downloads (igual aos vídeos)
         if request.args.get('salvar') == '1':
-            destino = caminho_sem_sobrescrever(PASTA_DESTINO, nome_de_arquivo_seguro(nome_download[:-4]), "jpg")
-            shutil.move(caminho_jpg, destino)
-            if os.path.exists(caminho_heic):
-                os.remove(caminho_heic)
+            destino = caminho_sem_sobrescrever(PASTA_DESTINO, nome_de_arquivo_seguro(nome_sem_extensao), formato)
+            shutil.move(caminho_convertido, destino)
+            if os.path.exists(caminho_original):
+                os.remove(caminho_original)
             arquivos_salvos[id_conversao] = destino  # permite usar /api/mostrar/<id>
             return jsonify({"id": id_conversao, "arquivo": os.path.basename(destino)})
 
-        resposta = send_file(caminho_jpg, as_attachment=True, download_name=nome_download)
+        resposta = send_file(caminho_convertido, as_attachment=True, download_name=nome_download)
 
         def limpar_arquivos():
             try:
-                if os.path.exists(caminho_heic):
-                    os.remove(caminho_heic)
-                if os.path.exists(caminho_jpg):
-                    os.remove(caminho_jpg)
+                if os.path.exists(caminho_original):
+                    os.remove(caminho_original)
+                if os.path.exists(caminho_convertido):
+                    os.remove(caminho_convertido)
                 print(f"Limpeza: Arquivos {id_conversao} removidos com sucesso.")
             except Exception as e:
                 print(f"Erro ao limpar arquivos: {e}")
 
         return ao_terminar_envio(resposta, limpar_arquivos)
-        
+
     else:
-        if os.path.exists(caminho_heic):
-            os.remove(caminho_heic)
-        return jsonify({"erro": "Falha na conversão. Verifique se o arquivo é um HEIC válido."}), 500
+        if os.path.exists(caminho_original):
+            os.remove(caminho_original)
+        return jsonify({"erro": f"Falha na conversão. Verifique se o arquivo é uma foto {extensao.upper()} válida."}), 500
 
 
 # ==========================================
@@ -510,7 +523,7 @@ def abrir_janela():
 
     janela = webview.create_window(
         "Baixar YouTube", ENDERECO_PAINEL,
-        width=760, height=900, min_size=(440, 620), background_color="#f3f0ec",
+        width=760, height=900, min_size=(440, 620), background_color="#fff4ea",
     )
 
     def ao_mostrar():

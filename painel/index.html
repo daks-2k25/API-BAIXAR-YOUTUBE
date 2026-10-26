@@ -8,7 +8,7 @@
     <link rel="icon" href="icone.ico" sizes="any" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;1,9..144,400&family=Inter:wght@300;400;500;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="style.css" />
@@ -63,7 +63,7 @@
         <span class="etiqueta">Baixar YouTube · Converter Foto</span>
         <h1>Seus vídeos e músicas, <span>salvos em segundos.</span></h1>
         <p class="subtitulo">
-          Vídeos do YouTube, TikTok e Instagram em MP4 ou MP3, e fotos HEIC em JPG, direto na sua pasta Downloads.
+          Vídeos do YouTube, TikTok e Instagram em MP4 ou MP3, e fotos em JPG ou WebP, direto na sua pasta Downloads.
         </p>
       </header>
 
@@ -83,7 +83,7 @@
       <!-- Abas -->
       <nav class="abas">
         <button class="aba ativa" data-aba="youtube">Vídeos</button>
-        <button class="aba" data-aba="heic">HEIC → JPG</button>
+        <button class="aba" data-aba="heic">Converter foto</button>
       </nav>
 
       <!-- Ferramenta 1: YouTube -->
@@ -165,12 +165,16 @@
         <ul id="lista-downloads"></ul>
       </section>
 
-      <!-- Ferramenta 2: HEIC -->
+      <!-- Ferramenta 2: Converter foto (HEIC -> JPG, HEIC/JPG/PNG -> WebP) -->
       <section id="heic" class="card escondido">
+        <div class="grupo grupo-conversao" id="formatos-foto">
+          <button type="button" class="chip ativo" data-formato="jpg">JPG</button>
+          <button type="button" class="chip" data-formato="webp">WebP</button>
+        </div>
         <label class="area-arquivo" id="area-arquivo">
           <input id="arquivo-heic" type="file" accept=".heic,.heif" hidden />
           <span class="icone">⬆</span>
-          <span>Clique ou arraste uma foto <b>.heic</b> aqui</span>
+          <span id="texto-arquivo">Clique ou arraste uma foto <b>.heic</b> aqui</span>
         </label>
         <p id="status-heic" class="status"></p>
       </section>

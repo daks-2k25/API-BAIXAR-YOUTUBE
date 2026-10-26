@@ -1,6 +1,6 @@
 # Baixar YouTube
 
-Aplicação em Python para baixar vídeos do **YouTube**, **TikTok** e **Instagram** em **MP4** ou extrair o áudio em **MP3**, além de converter fotos **HEIC** (iPhone) para **JPG**. Abre numa **janela própria**, com uma **API REST** por trás, feita com Flask e [yt-dlp](https://github.com/yt-dlp/yt-dlp).
+Aplicação em Python para baixar vídeos do **YouTube**, **TikTok** e **Instagram** em **MP4** ou extrair o áudio em **MP3**, além de converter fotos **HEIC** (iPhone) para **JPG** e fotos HEIC, JPG ou PNG para **WebP**. Abre numa **janela própria**, com uma **API REST** por trás, feita com Flask e [yt-dlp](https://github.com/yt-dlp/yt-dlp).
 
 ## Início rápido (Windows)
 
@@ -10,7 +10,7 @@ Aplicação em Python para baixar vídeos do **YouTube**, **TikTok** e **Instagr
 Pronto. **Na primeira vez**, ele instala sozinho o que estiver faltando no PC:
 
 - **uv**: cuida do Python e das bibliotecas. Usa o Python que já estiver no PC ou baixa um, sem instalar nada no Windows
-- **FFmpeg**: junta vídeo e áudio, gera MP3 e converte HEIC
+- **FFmpeg**: junta vídeo e áudio, gera MP3 e converte as fotos
 - **Deno**: o yt-dlp usa para ler o YouTube
 
 O uv, o FFmpeg e o Deno vêm pelo winget, que já vem no Windows 10 e 11. Isso leva alguns minutos e mostra o andamento numa janela. **Nas próximas vezes**, ele vê que está tudo pronto e abre o programa em cerca de 2 segundos.
@@ -34,7 +34,7 @@ No primeiro clique ele também cria o atalho **Baixar YouTube**, com a logo, na 
 - **Salva direto na pasta Downloads**, com o **título do vídeo** no nome (sem sobrescrever arquivos que já existem)
 - **Cortar um trecho**: baixa só o pedaço escolhido (ex.: de 1:20 a 2:05), cortado no segundo exato
 - **Cancelar** downloads na fila ou em andamento
-- **Conversão de HEIC para JPG**, salvo direto em Downloads
+- **Conversão de fotos**: HEIC para JPG, e HEIC, JPG ou PNG para WebP (bem menor, mantém a transparência do PNG), salvo direto em Downloads
 - **Executável para Windows**, que não precisa de Python instalado e mantém o yt-dlp atualizado sozinho
 
 ## Usando o programa
@@ -42,7 +42,7 @@ No primeiro clique ele também cria o atalho **Baixar YouTube**, com a logo, na 
 - **Baixar:** cole o link do YouTube, TikTok ou Instagram e confira a prévia do vídeo (no YouTube, clique na miniatura para assistir ali mesmo). Escolha MP4 ou MP3 e a resolução, e clique em **Baixar agora**. O arquivo é salvo na sua pasta **Downloads**; o botão **Mostrar na pasta** abre o Explorador com ele selecionado.
 - **Cortar trecho:** clique em **✂ Cortar trecho** e preencha o início e o fim (ex.: `1:20` e `2:05`). Deixe o fim vazio para ir até o final do vídeo.
 - **Cancelar:** cada download tem um botão **✕ Cancelar** enquanto está na fila ou baixando.
-- **HEIC → JPG:** arraste a foto ou clique para escolher. O JPG é salvo na pasta Downloads.
+- **Converter foto:** escolha **JPG** (a partir de HEIC) ou **WebP** (a partir de HEIC, JPG ou PNG), depois arraste a foto ou clique para escolher. A foto convertida é salva na pasta Downloads.
 - **Atualizar:** quando sair uma versão nova, aparece uma notificação no canto da janela, um aviso no topo e uma bolinha no sino 🔔. Clique em **Atualizar agora**: o programa baixa a versão nova, reinicia sozinho e continua com seus arquivos e configurações. Com o programa aberto, ele confere se saiu versão nova a cada 30 minutos. A versão instalada aparece no rodapé.
 - **Depois:** se preferir atualizar mais tarde, clique em **Depois**. A notificação não volta para essa versão (o sino continua com a bolinha, e a atualização fica disponível nele). Se sair uma versão ainda mais nova, o programa avisa de novo.
 - **Sino 🔔:** mostra a atualização disponível ou confirma que você está na versão mais recente, com o botão **Verificar agora**.
@@ -97,7 +97,7 @@ API-BAIXAR-YOUTUBE/
 │   ├── downloader.py    # Fila de downloads, corte de trecho e cancelamento (yt-dlp)
 │   ├── informacoes.py   # Prévia do vídeo (título, canal, duração, miniatura)
 │   ├── sites.py         # O que é comum a YouTube, TikTok e Instagram (títulos, login, mensagens de erro)
-│   └── conversor.py     # Conversão de HEIC para JPG (FFmpeg)
+│   └── conversor.py     # Conversão de fotos: HEIC -> JPG e HEIC/JPG/PNG -> WebP (FFmpeg)
 ├── logos/               # Identidade visual: logo e ícones em SVG, PNG e WebP
 ├── ferramentas/
 │   ├── iniciar.ps1      # Usado pelo iniciar.bat: instala o que faltar, cria o atalho e abre o programa
@@ -235,19 +235,26 @@ curl -OJ http://127.0.0.1:5000/api/arquivo/3f2b8c1e-....
 
 Responde `404` se o arquivo ainda não estiver pronto ou não for encontrado.
 
-### `POST /api/converter/heic`
+### `POST /api/converter/imagem`
 
-Converte uma imagem HEIC para JPG. Envie o arquivo como `multipart/form-data` no campo `arquivo`; a resposta é o JPG.
+Converte uma foto. Envie como `multipart/form-data` o arquivo no campo `arquivo` e o formato de saída no campo `formato`; a resposta é a foto convertida.
+
+| `formato` | Aceita |
+|-----------|--------|
+| `jpg` (padrão) | HEIC/HEIF |
+| `webp` | HEIC/HEIF, JPG e PNG (mantém a transparência) |
 
 ```bash
-curl -X POST http://127.0.0.1:5000/api/converter/heic \
-  -F "arquivo=@foto.heic" -OJ
+curl -X POST http://127.0.0.1:5000/api/converter/imagem \
+  -F "arquivo=@foto.png" -F "formato=webp" -OJ
 ```
+
+O endereço antigo `POST /api/converter/heic` continua funcionando (sem `formato`, converte para JPG).
 
 | Código | Quando |
 |--------|--------|
-| `400`  | Nenhum arquivo enviado no campo `arquivo` |
-| `500`  | Falha na conversão (o arquivo não é um HEIC válido) |
+| `400`  | Nenhum arquivo enviado, formato inválido ou tipo de foto não aceito para esse formato |
+| `500`  | Falha na conversão (o arquivo não é uma foto válida) |
 
 ### `POST /api/ping` e `POST /api/encerrar`
 

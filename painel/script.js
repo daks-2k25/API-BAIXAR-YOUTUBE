@@ -373,11 +373,30 @@ function criarItem(id, descricao, tituloDaPrevia) {
 }
 
 // ==========================================
-// FERRAMENTA 2: HEIC -> JPG
+// FERRAMENTA 2: CONVERTER FOTO (HEIC -> JPG, HEIC/JPG/PNG -> WebP)
 // ==========================================
 const areaArquivo = document.getElementById("area-arquivo");
 const campoArquivo = document.getElementById("arquivo-heic");
+const textoArquivo = document.getElementById("texto-arquivo");
 const statusHeic = document.getElementById("status-heic");
+
+// Mesmas regras do servicos/conversor.py: JPG só a partir de HEIC (PNG transparente ficaria com fundo preto)
+const ENTRADAS_POR_FORMATO = {
+    jpg: { aceita: ".heic,.heif", texto: "<b>.heic</b>" },
+    webp: { aceita: ".heic,.heif,.jpg,.jpeg,.png", texto: "<b>.heic</b>, <b>.jpg</b> ou <b>.png</b>" },
+};
+let formatoFoto = "jpg";
+
+document.querySelectorAll("#formatos-foto .chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+        document.querySelectorAll("#formatos-foto .chip").forEach((c) => c.classList.remove("ativo"));
+        chip.classList.add("ativo");
+        formatoFoto = chip.dataset.formato;
+        campoArquivo.accept = ENTRADAS_POR_FORMATO[formatoFoto].aceita;
+        textoArquivo.innerHTML = `Clique ou arraste uma foto ${ENTRADAS_POR_FORMATO[formatoFoto].texto} aqui`;
+        statusHeic.textContent = "";
+    });
+});
 
 campoArquivo.addEventListener("change", () => {
     if (campoArquivo.files[0]) converterHeic(campoArquivo.files[0]);
@@ -400,9 +419,10 @@ async function converterHeic(arquivo) {
 
     const formulario = new FormData();
     formulario.append("arquivo", arquivo);
+    formulario.append("formato", formatoFoto);
 
-    // ?salvar=1: o JPG vai direto para a pasta Downloads, igual aos vídeos
-    const resposta = await fetch("/api/converter/heic?salvar=1", { method: "POST", body: formulario });
+    // ?salvar=1: a foto vai direto para a pasta Downloads, igual aos vídeos
+    const resposta = await fetch("/api/converter/imagem?salvar=1", { method: "POST", body: formulario });
     const dados = await resposta.json();
 
     if (!resposta.ok) {

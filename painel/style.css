@@ -1,24 +1,27 @@
 /* ==========================================
-   Tema claro e quente, nas cores da logo (laranja → amarelo)
+   Tema "Editorial + Pôr do sol": título com serifa, tudo alinhado à
+   esquerda e cantos retos, nas cores e no degradê da logo (laranja → amarelo)
    ========================================== */
 :root {
-    --fundo: #f3f0ec;
-    --superficie: rgba(255, 255, 255, 0.72);
+    --fundo: #fff4ea;
+    --superficie: rgba(255, 255, 255, 0.78);
     --superficie-forte: rgba(255, 255, 255, 0.94);
     --campo: rgba(255, 255, 255, 0.9);
     --borda: rgba(28, 25, 23, 0.08);
     --borda-forte: rgba(28, 25, 23, 0.14);
     --texto: #1c1917;
     --texto-suave: #8a827b;
-    --escuro: #1c1917;
+    --escuro: #2a1a12;
     --destaque: #e8551f;          /* laranja da logo */
     --destaque-claro: #ffb23d;    /* amarelo da logo */
     --destaque-fundo: #fdeee4;
     --erro: #d23c3c;
     --ok: #2e9b62;
     --aviso: #a66a12;
-    --sombra: 0 1px 2px rgba(28, 25, 23, 0.04), 0 12px 40px rgba(120, 72, 40, 0.08);
-    --sombra-flutuante: 0 18px 50px rgba(80, 50, 30, 0.18);
+    --sombra: 0 1px 2px rgba(120, 50, 20, 0.06), 0 16px 44px rgba(232, 85, 31, 0.14);
+    --sombra-flutuante: 0 20px 54px rgba(232, 85, 31, 0.24);
+    --degrade: linear-gradient(120deg, #e8551f 0%, #f6822b 45%, #ffb23d 100%);
+    --serifa: "Fraunces", Georgia, serif;
 }
 
 * {
@@ -38,21 +41,21 @@ body {
     overflow-x: hidden;
 }
 
-/* Degradê quente no fundo: pêssego/laranja no alto, tom frio embaixo */
+/* Degradê de pôr do sol no fundo: laranja no alto à direita, amarelo à esquerda */
 .brilho {
     position: fixed;
     inset: 0;
     z-index: -1;
     background:
-        radial-gradient(ellipse 70% 55% at 85% 0%, rgba(244, 140, 80, 0.55), transparent 70%),
-        radial-gradient(ellipse 55% 45% at 15% 18%, rgba(255, 196, 140, 0.45), transparent 70%),
-        radial-gradient(ellipse 60% 50% at 10% 100%, rgba(170, 190, 205, 0.55), transparent 70%),
+        radial-gradient(ellipse 80% 60% at 90% -5%, rgba(232, 85, 31, 0.7), transparent 70%),
+        radial-gradient(ellipse 60% 50% at 5% 10%, rgba(255, 178, 61, 0.6), transparent 70%),
+        radial-gradient(ellipse 70% 50% at 50% 110%, rgba(255, 140, 90, 0.35), transparent 70%),
         var(--fundo);
 }
 
 .container {
     width: 100%;
-    max-width: 580px;
+    max-width: 620px;
     margin: 0 auto;
     padding: 40px 16px 48px;
 }
@@ -62,50 +65,53 @@ body {
    ========================================== */
 header {
     position: relative;
-    text-align: center;
-    margin-bottom: 28px;
+    margin-bottom: 18px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid rgba(232, 85, 31, 0.2);
+    text-align: left;
 }
 
 .logo {
     display: block;
-    width: 88px;
-    height: 88px;
-    margin: 0 auto 18px;
-    border-radius: 22px;
-    box-shadow: 0 14px 34px rgba(232, 85, 31, 0.22);
+    width: 52px;
+    height: 52px;
+    margin: 0 0 22px;
+    border-radius: 12px;
+    box-shadow: 0 10px 24px rgba(232, 85, 31, 0.3);
 }
 
 .etiqueta {
-    display: inline-block;
-    margin-bottom: 14px;
-    padding: 4px 12px;
-    border: 1px solid var(--borda);
-    border-radius: 999px;
-    background: var(--superficie);
-    color: var(--texto-suave);
-    font-size: 12px;
-    letter-spacing: 0.02em;
+    display: block;
+    margin-bottom: 10px;
+    color: var(--destaque);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
 }
 
 h1 {
-    font-size: 36px;
+    font-family: var(--serifa);
+    font-size: 44px;
     font-weight: 400;
-    line-height: 1.12;
-    letter-spacing: -0.03em;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
 }
 
-/* Segunda parte do título em cinza, mais leve */
+/* Segunda parte do título em itálico, no degradê da logo */
 h1 span {
-    display: block;
-    color: var(--texto-suave);
-    font-weight: 300;
+    font-style: italic;
+    background: var(--degrade);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
 }
 
 .subtitulo {
-    max-width: 420px;
-    margin: 12px auto 0;
+    max-width: 460px;
+    margin-top: 14px;
     color: var(--texto-suave);
-    font-size: 14px;
+    font-size: 15px;
 }
 
 /* ==========================================
@@ -132,10 +138,9 @@ h1 span {
     width: 40px;
     height: 40px;
     border: 1px solid var(--borda);
-    border-radius: 50%;
+    border-radius: 4px;
     background: var(--superficie-forte);
     color: var(--texto-suave);
-    box-shadow: var(--sombra);
     cursor: pointer;
     transition: 0.2s;
 }
@@ -169,7 +174,7 @@ h1 span {
     width: min(320px, calc(100vw - 32px));
     padding: 16px 18px;
     border: 1px solid var(--borda);
-    border-radius: 20px;
+    border-radius: 4px;
     background: var(--superficie-forte);
     backdrop-filter: blur(16px);
     box-shadow: var(--sombra-flutuante);
@@ -245,8 +250,9 @@ h1 span {
     margin-bottom: 16px;
     padding: 18px 20px;
     border: 1px solid rgba(232, 85, 31, 0.18);
-    border-radius: 24px;
-    background: linear-gradient(135deg, rgba(255, 214, 180, 0.75), rgba(255, 255, 255, 0.85));
+    border-left: 3px solid var(--destaque);
+    border-radius: 4px;
+    background: var(--superficie-forte);
     box-shadow: var(--sombra);
 }
 
@@ -280,18 +286,18 @@ h1 span {
 .botao-atualizar {
     padding: 9px 18px;
     border: none;
-    border-radius: 999px;
-    background: var(--escuro);
+    border-radius: 4px;
+    background: var(--degrade);
     color: #fff;
     font: inherit;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: 0.2s;
 }
 
 .botao-atualizar:hover {
-    background: #000;
+    filter: brightness(1.05);
 }
 
 .botao-atualizar:disabled {
@@ -306,7 +312,7 @@ h1 span {
 .botao-depois {
     padding: 9px 16px;
     border: 1px solid var(--borda-forte);
-    border-radius: 999px;
+    border-radius: 4px;
     background: rgba(255, 255, 255, 0.7);
     color: var(--texto);
     font: inherit;
@@ -340,7 +346,7 @@ h1 span {
     width: min(340px, calc(100vw - 32px));
     padding: 16px 18px;
     border: 1px solid var(--borda);
-    border-radius: 22px;
+    border-radius: 4px;
     background: var(--superficie-forte);
     backdrop-filter: blur(16px);
     box-shadow: var(--sombra-flutuante);
@@ -369,26 +375,21 @@ h1 span {
 /* ==========================================
    Abas e cards
    ========================================== */
+/* Abas como links sublinhados */
 .abas {
     display: flex;
-    gap: 4px;
-    padding: 5px;
-    margin-bottom: 14px;
-    border: 1px solid var(--borda);
-    border-radius: 999px;
-    background: var(--superficie);
-    backdrop-filter: blur(16px);
+    gap: 22px;
+    margin-bottom: 18px;
 }
 
 .aba {
-    flex: 1;
-    padding: 10px;
+    padding: 4px 0;
     border: none;
-    border-radius: 999px;
+    border-bottom: 2px solid transparent;
     background: transparent;
     color: var(--texto-suave);
     font: inherit;
-    font-size: 14px;
+    font-size: 15px;
     cursor: pointer;
     transition: 0.2s;
 }
@@ -398,15 +399,15 @@ h1 span {
 }
 
 .aba.ativa {
-    background: var(--escuro);
-    color: #fff;
+    border-bottom-color: var(--destaque);
+    color: var(--texto);
     font-weight: 500;
 }
 
 .card {
-    padding: 22px;
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    border-radius: 28px;
+    padding: 24px;
+    border: 1px solid rgba(232, 85, 31, 0.18);
+    border-radius: 4px;
     background: var(--superficie);
     backdrop-filter: blur(20px);
     box-shadow: var(--sombra);
@@ -419,8 +420,8 @@ h1 span {
 input[type="url"] {
     width: 100%;
     padding: 15px 20px;
-    border: 1px solid var(--borda);
-    border-radius: 999px;
+    border: 1px solid var(--borda-forte);
+    border-radius: 2px;
     background: var(--campo);
     color: var(--texto);
     font: inherit;
@@ -433,8 +434,7 @@ input[type="url"]::placeholder {
 }
 
 input[type="url"]:focus {
-    border-color: rgba(232, 85, 31, 0.5);
-    box-shadow: 0 0 0 4px rgba(232, 85, 31, 0.12);
+    border-color: var(--destaque);
 }
 
 /* ==========================================
@@ -456,8 +456,8 @@ input[type="url"]:focus {
 
 .chip {
     padding: 6px 14px;
-    border: 1px solid var(--borda);
-    border-radius: 999px;
+    border: 1px solid var(--borda-forte);
+    border-radius: 2px;
     background: rgba(255, 255, 255, 0.6);
     color: var(--texto-suave);
     font: inherit;
@@ -471,10 +471,10 @@ input[type="url"]:focus {
 }
 
 .chip.ativo {
-    border-color: rgba(232, 85, 31, 0.35);
-    background: var(--destaque-fundo);
-    color: var(--destaque);
-    font-weight: 500;
+    border-color: transparent;
+    background: var(--degrade);
+    color: #fff;
+    font-weight: 600;
 }
 
 .chip:disabled {
@@ -511,8 +511,8 @@ input[type="url"]:focus {
 .campo-tempo {
     width: 72px;
     padding: 6px 10px;
-    border: 1px solid var(--borda);
-    border-radius: 999px;
+    border: 1px solid var(--borda-forte);
+    border-radius: 2px;
     background: var(--campo);
     color: var(--texto);
     font: inherit;
@@ -539,28 +539,35 @@ input[type="url"]:focus {
     display: none;
 }
 
-/* Botão principal: pílula escura */
+/* Botão principal: retangular, no degradê da logo */
 .botao {
     width: 100%;
-    padding: 15px;
+    padding: 16px;
     border: none;
-    border-radius: 999px;
-    background: var(--escuro);
+    border-radius: 4px;
+    background: var(--degrade);
     color: #fff;
     font: inherit;
-    font-weight: 500;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    box-shadow: 0 10px 28px rgba(232, 85, 31, 0.32);
     cursor: pointer;
-    transition: 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
 }
 
 .botao:hover {
-    background: #000;
-    box-shadow: 0 10px 26px rgba(28, 25, 23, 0.22);
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+    box-shadow: 0 14px 34px rgba(232, 85, 31, 0.4);
 }
 
 .botao:disabled {
     opacity: 0.3;
     cursor: not-allowed;
+    filter: none;
+    transform: none;
     box-shadow: none;
 }
 
@@ -571,7 +578,7 @@ input[type="url"]:focus {
     margin-top: 12px;
     padding: 12px 16px;
     border: 1px solid rgba(214, 150, 40, 0.3);
-    border-radius: 18px;
+    border-radius: 4px;
     background: #fff6e3;
     color: var(--aviso);
     font-size: 14px;
@@ -586,7 +593,7 @@ input[type="url"]:focus {
     margin-top: 10px;
     padding: 6px 14px;
     border: 1px solid rgba(166, 106, 18, 0.4);
-    border-radius: 999px;
+    border-radius: 2px;
     background: #fff;
     color: var(--aviso);
     font: inherit;
@@ -608,7 +615,7 @@ input[type="url"]:focus {
     margin-top: 12px;
     padding: 10px;
     border: 1px solid var(--borda);
-    border-radius: 20px;
+    border-radius: 4px;
     background: rgba(255, 255, 255, 0.8);
 }
 
@@ -620,7 +627,7 @@ input[type="url"]:focus {
     position: relative;
     flex: 0 0 168px;
     aspect-ratio: 16 / 9;
-    border-radius: 12px;
+    border-radius: 2px;
     overflow: hidden;
     background: #ece7e2;
 }
@@ -722,7 +729,7 @@ input[type="url"]:focus {
 
 @media (max-width: 480px) {
     h1 {
-        font-size: 30px;
+        font-size: 36px;
     }
 
     .previa {
@@ -754,7 +761,7 @@ input[type="url"]:focus {
 .item {
     padding: 14px 16px;
     border: 1px solid var(--borda);
-    border-radius: 18px;
+    border-radius: 4px;
     background: rgba(255, 255, 255, 0.85);
 }
 
@@ -778,10 +785,9 @@ input[type="url"]:focus {
 }
 
 .barra {
-    height: 6px;
+    height: 4px;
     margin-top: 10px;
-    border-radius: 999px;
-    background: #efe9e3;
+    background: rgba(232, 85, 31, 0.12);
     overflow: hidden;
 }
 
@@ -789,8 +795,7 @@ input[type="url"]:focus {
 .barra-preenchida {
     height: 100%;
     width: 0;
-    border-radius: 999px;
-    background: linear-gradient(90deg, var(--destaque), var(--destaque-claro));
+    background: var(--degrade);
     transition: width 0.4s;
 }
 
@@ -822,7 +827,7 @@ input[type="url"]:focus {
 .item-botao {
     padding: 5px 12px;
     border: 1px solid var(--borda-forte);
-    border-radius: 999px;
+    border-radius: 2px;
     background: #fff;
     color: var(--texto);
     font: inherit;
@@ -845,16 +850,21 @@ input[type="url"]:focus {
 }
 
 /* ==========================================
-   Conversor HEIC
+   Conversor de fotos
    ========================================== */
+.grupo-conversao {
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
 .area-arquivo {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
     padding: 44px 16px;
-    border: 1.5px dashed var(--borda-forte);
-    border-radius: 22px;
+    border: 1.5px dashed rgba(232, 85, 31, 0.35);
+    border-radius: 4px;
     background: rgba(255, 255, 255, 0.5);
     color: var(--texto-suave);
     text-align: center;
@@ -878,9 +888,9 @@ input[type="url"]:focus {
     place-items: center;
     width: 48px;
     height: 48px;
-    border-radius: 50%;
-    background: var(--destaque-fundo);
-    color: var(--destaque);
+    border-radius: 4px;
+    background: var(--degrade);
+    color: #fff;
     font-size: 20px;
 }
 
@@ -896,7 +906,7 @@ input[type="url"]:focus {
    ========================================== */
 footer {
     margin-top: 26px;
-    text-align: center;
+    text-align: left;
     font-size: 13px;
     color: var(--texto-suave);
 }
@@ -915,7 +925,7 @@ footer {
     margin-top: 14px;
     padding: 8px 18px;
     border: 1px solid rgba(210, 60, 60, 0.3);
-    border-radius: 999px;
+    border-radius: 2px;
     background: rgba(255, 255, 255, 0.6);
     color: var(--erro);
     font: inherit;
