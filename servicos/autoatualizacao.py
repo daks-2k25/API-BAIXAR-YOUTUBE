@@ -41,7 +41,7 @@ ARQUIVO_MANIFESTO = os.path.join(PASTA_PROJETO, ".arquivos_do_programa.txt")
 PROTEGIDOS = (
     ".git", ".ambiente", ".venv", "downloads", "BaixarYouTube", "atualizacoes",
     "ferramentas/compilacao", ".atalho_criado", ".arquivos_do_programa.txt",
-    ".preferencias.json", "cookies.txt",
+    ".preferencias.json", ".historico.json", "cookies.txt",
 )
 
 

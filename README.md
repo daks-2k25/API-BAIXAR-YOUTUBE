@@ -35,6 +35,7 @@ No primeiro clique ele também cria o atalho **Baixar YouTube**, com a logo, na 
 - **Cortar um trecho**: baixa só o pedaço escolhido (ex.: de 1:20 a 2:05), cortado no segundo exato
 - **Cancelar** downloads na fila ou em andamento
 - **Conversão de fotos**: HEIC para JPG, e HEIC, JPG ou PNG para WebP (bem menor, mantém a transparência do PNG), salvo direto em Downloads
+- **Meus downloads**: lista do que o programa já salvou (vídeos, músicas e fotos), com filtros, **Abrir** e **Mostrar na pasta**, mesmo depois de fechar e abrir o programa
 - **Executável para Windows**, que não precisa de Python instalado e mantém o yt-dlp atualizado sozinho
 
 ## Usando o programa
@@ -43,6 +44,7 @@ No primeiro clique ele também cria o atalho **Baixar YouTube**, com a logo, na 
 - **Cortar trecho:** clique em **✂ Cortar trecho** e preencha o início e o fim (ex.: `1:20` e `2:05`). Deixe o fim vazio para ir até o final do vídeo.
 - **Cancelar:** cada download tem um botão **✕ Cancelar** enquanto está na fila ou baixando.
 - **Converter foto:** escolha **JPG** (a partir de HEIC) ou **WebP** (a partir de HEIC, JPG ou PNG), depois arraste a foto ou clique para escolher. A foto convertida é salva na pasta Downloads.
+- **Meus downloads:** mostra tudo o que o programa salvou, do mais novo para o mais antigo, com data e tamanho. Filtre por **Vídeos**, **Músicas** ou **Fotos**, e use **Abrir** (abre no player ou visualizador do Windows) ou **Mostrar na pasta**. **Remover da lista** e **Limpar lista** só tiram da lista: os arquivos continuam na pasta Downloads. Se um arquivo foi apagado ou movido, ele aparece riscado.
 - **Atualizar:** quando sair uma versão nova, aparece uma notificação no canto da janela, um aviso no topo e uma bolinha no sino 🔔. Clique em **Atualizar agora**: o programa baixa a versão nova, reinicia sozinho e continua com seus arquivos e configurações. Com o programa aberto, ele confere se saiu versão nova a cada 30 minutos. A versão instalada aparece no rodapé.
 - **Depois:** se preferir atualizar mais tarde, clique em **Depois**. A notificação não volta para essa versão (o sino continua com a bolinha, e a atualização fica disponível nele). Se sair uma versão ainda mais nova, o programa avisa de novo.
 - **Sino 🔔:** mostra a atualização disponível ou confirma que você está na versão mais recente, com o botão **Verificar agora**.
@@ -92,6 +94,7 @@ API-BAIXAR-YOUTUBE/
 ├── servicos/
 │   ├── caminhos.py      # Pastas do projeto e pasta Downloads do usuário
 │   ├── preferencias.py  # Preferências salvas (.preferencias.json): modo de abertura, atualização adiada
+│   ├── historico.py     # Aba "Meus downloads": o que o programa salvou (.historico.json)
 │   ├── autoatualizacao.py # Botão "Atualizar agora": baixa e instala a versão nova
 │   ├── atualizador.py   # Mantém o yt-dlp atualizado dentro do executável
 │   ├── downloader.py    # Fila de downloads, corte de trecho e cancelamento (yt-dlp)
@@ -255,6 +258,18 @@ O endereço antigo `POST /api/converter/heic` continua funcionando (sem `formato
 |--------|--------|
 | `400`  | Nenhum arquivo enviado, formato inválido ou tipo de foto não aceito para esse formato |
 | `500`  | Falha na conversão (o arquivo não é uma foto válida) |
+
+### `GET /api/historico`
+
+Lista o que o programa já salvou, do mais novo para o mais antigo. Cada item traz `id`, `titulo`, `arquivo`, `caminho`, `tipo` (`video`, `musica` ou `foto`), `formato`, `data` (segundos desde 1970), `origem` (link do vídeo, se houver), `existe` (se o arquivo ainda está lá) e `tamanho` em bytes.
+
+### `DELETE /api/historico/<id>` e `DELETE /api/historico`
+
+Tiram um item da lista, ou limpam a lista toda. Os arquivos continuam na pasta Downloads.
+
+### `POST /api/abrir/<id>`
+
+Abre o arquivo no programa padrão do Windows. Responde `404` se o arquivo foi movido ou apagado. A rota `POST /api/mostrar/<id>` também passa a achar os arquivos do histórico.
 
 ### `POST /api/ping` e `POST /api/encerrar`
 

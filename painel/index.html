@@ -84,6 +84,7 @@
       <nav class="abas">
         <button class="aba ativa" data-aba="youtube">Vídeos</button>
         <button class="aba" data-aba="heic">Converter foto</button>
+        <button class="aba" data-aba="meus-downloads">Meus downloads</button>
       </nav>
 
       <!-- Ferramenta 1: YouTube -->
@@ -177,6 +178,21 @@
           <span id="texto-arquivo">Clique ou arraste uma foto <b>.heic</b> aqui</span>
         </label>
         <p id="status-heic" class="status"></p>
+      </section>
+
+      <!-- Meus downloads: histórico do que o programa salvou (preenchido pelo script.js) -->
+      <section id="meus-downloads" class="card escondido">
+        <div class="historico-topo">
+          <div class="grupo" id="filtros-historico">
+            <button type="button" class="chip ativo" data-tipo="todos">Todos</button>
+            <button type="button" class="chip" data-tipo="video">Vídeos</button>
+            <button type="button" class="chip" data-tipo="musica">Músicas</button>
+            <button type="button" class="chip" data-tipo="foto">Fotos</button>
+          </div>
+          <button type="button" id="limpar-historico" class="item-botao">Limpar lista</button>
+        </div>
+        <ul id="lista-historico"></ul>
+        <p id="historico-vazio" class="status escondido"></p>
       </section>
 
       <footer>

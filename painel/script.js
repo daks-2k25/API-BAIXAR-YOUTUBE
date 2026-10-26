@@ -9,8 +9,11 @@ document.querySelectorAll(".aba").forEach((aba) => {
     aba.addEventListener("click", () => {
         document.querySelectorAll(".aba").forEach((a) => a.classList.remove("ativa"));
         aba.classList.add("ativa");
-        document.getElementById("youtube").classList.toggle("escondido", aba.dataset.aba !== "youtube");
-        document.getElementById("heic").classList.toggle("escondido", aba.dataset.aba !== "heic");
+        // Cada aba mostra a seção com o mesmo id (youtube, heic, meus-downloads)
+        document.querySelectorAll("main > section.card").forEach((secao) => {
+            secao.classList.toggle("escondido", secao.id !== aba.dataset.aba);
+        });
+        if (aba.dataset.aba === "meus-downloads") carregarHistorico();
     });
 });
 
@@ -436,6 +439,116 @@ async function converterHeic(arquivo) {
         fetch(`/api/mostrar/${dados.id}`, { method: "POST" }).catch(() => {});
     });
     campoArquivo.value = "";
+}
+
+// ==========================================
+// MEUS DOWNLOADS: histórico do que o programa salvou
+// ==========================================
+const listaHistorico = document.getElementById("lista-historico");
+const historicoVazio = document.getElementById("historico-vazio");
+const ICONES_HISTORICO = { video: "▶", musica: "♪", foto: "▣", outro: "•" };
+let itensHistorico = [];
+let filtroHistorico = "todos";
+
+document.querySelectorAll("#filtros-historico .chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+        document.querySelectorAll("#filtros-historico .chip").forEach((c) => c.classList.remove("ativo"));
+        chip.classList.add("ativo");
+        filtroHistorico = chip.dataset.tipo;
+        mostrarHistorico();
+    });
+});
+
+document.getElementById("limpar-historico").addEventListener("click", async () => {
+    if (!confirm("Limpar a lista? Os arquivos continuam na pasta Downloads.")) return;
+    await fetch("/api/historico", { method: "DELETE" }).catch(() => {});
+    carregarHistorico();
+});
+
+async function carregarHistorico() {
+    try {
+        itensHistorico = await (await fetch("/api/historico")).json();
+    } catch {
+        itensHistorico = [];
+    }
+    mostrarHistorico();
+}
+
+// 35651584 -> "34 MB"
+function formatarTamanho(bytes) {
+    if (bytes == null) return "";
+    const unidades = ["B", "KB", "MB", "GB"];
+    let valor = bytes;
+    let i = 0;
+    while (valor >= 1024 && i < unidades.length - 1) {
+        valor /= 1024;
+        i++;
+    }
+    return `${valor.toLocaleString("pt-BR", { maximumFractionDigits: valor < 10 && i > 1 ? 1 : 0 })} ${unidades[i]}`;
+}
+
+function formatarData(segundos) {
+    return new Date(segundos * 1000).toLocaleString("pt-BR", {
+        day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+    });
+}
+
+function mostrarHistorico() {
+    const itens = itensHistorico.filter((i) => filtroHistorico === "todos" || i.tipo === filtroHistorico);
+    listaHistorico.replaceChildren();
+    document.getElementById("limpar-historico").hidden = itensHistorico.length === 0;
+
+    historicoVazio.classList.toggle("escondido", itens.length > 0);
+    historicoVazio.textContent = itensHistorico.length === 0
+        ? "Nada por aqui ainda. Os vídeos, músicas e fotos que você salvar pelo programa aparecem nesta aba."
+        : "Nenhum arquivo desse tipo na lista.";
+
+    itens.forEach((dados) => {
+        const item = document.createElement("li");
+        item.className = "item historico-item" + (dados.existe ? "" : " ausente");
+        item.innerHTML = `
+            <div class="historico-linha">
+                <span class="historico-icone"></span>
+                <div class="historico-info">
+                    <span class="item-titulo"></span>
+                    <span class="historico-detalhes"></span>
+                </div>
+            </div>
+            <div class="item-acoes"></div>
+        `;
+        // textContent (e não innerHTML): o título vem do vídeo e pode ter qualquer caractere
+        item.querySelector(".historico-icone").textContent = ICONES_HISTORICO[dados.tipo] || ICONES_HISTORICO.outro;
+        const titulo = item.querySelector(".item-titulo");
+        titulo.textContent = dados.titulo;
+        titulo.title = dados.arquivo;
+        item.querySelector(".historico-detalhes").textContent = dados.existe
+            ? [dados.formato, formatarData(dados.data), formatarTamanho(dados.tamanho)].join(" · ")
+            : `${dados.formato} · ${formatarData(dados.data)} · arquivo não encontrado (movido ou apagado)`;
+
+        const acoes = item.querySelector(".item-acoes");
+        const acao = (texto, aoClicar, classe = "") => {
+            const botao = document.createElement("button");
+            botao.type = "button";
+            botao.className = `item-botao ${classe}`.trim();
+            botao.textContent = texto;
+            botao.addEventListener("click", aoClicar);
+            acoes.appendChild(botao);
+        };
+        const chamar = (rota) => fetch(rota, { method: "POST" })
+            .then((r) => (r.ok ? null : r.json().then((d) => { alert(d.erro); carregarHistorico(); })))
+            .catch(() => {});
+
+        if (dados.existe) {
+            acao("▶ Abrir", () => chamar(`/api/abrir/${dados.id}`));
+            acao("📂 Mostrar na pasta", () => chamar(`/api/mostrar/${dados.id}`));
+        }
+        acao("✕ Remover da lista", async () => {
+            await fetch(`/api/historico/${dados.id}`, { method: "DELETE" }).catch(() => {});
+            carregarHistorico();
+        }, "remover");
+
+        listaHistorico.appendChild(item);
+    });
 }
 
 // ==========================================

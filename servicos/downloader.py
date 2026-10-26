@@ -9,6 +9,7 @@ import time
 import yt_dlp
 from yt_dlp.utils import DownloadCancelled, download_range_func
 
+from servicos import historico
 from servicos.caminhos import PASTA_DESTINO, PASTA_DOWNLOADS
 from servicos.sites import mensagem_de_erro, opcoes_de_login, titulo_amigavel
 
@@ -178,6 +179,7 @@ def processar(tarefa):
 
                     titulos_download[id_download] = titulo
                     arquivos_salvos[id_download] = destino
+                    historico.registrar(id_download, destino, titulo, url)
                     status_download[id_download] = "Pronto"
                     print(f"[FILA] Sucesso! Salvo em: {destino}")
                     break

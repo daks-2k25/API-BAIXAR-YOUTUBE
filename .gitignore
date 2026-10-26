@@ -14,4 +14,5 @@ atualizacoes/
 uv.lock
 .arquivos_do_programa.txt
 .preferencias.json
+.historico.json
 cookies.txt

@@ -25,7 +25,7 @@ from servicos.downloader import (
 from servicos.conversor import FORMATOS, converter_imagem
 from servicos.informacoes import obter_informacoes
 from servicos.sites import mensagem_de_erro
-from servicos import autoatualizacao, preferencias
+from servicos import autoatualizacao, historico, preferencias
 
 # O painel web (pasta painel/) é servido pela própria API em http://localhost:5000
 app = Flask(__name__, static_folder=PASTA_PAINEL, static_url_path="")
@@ -195,10 +195,15 @@ def cancelar_api(id_download):
     return jsonify({"mensagem": "Cancelando...", "id": id_download})
 
 
+def caminho_do_arquivo(id_arquivo):
+    """Arquivo salvo nesta sessão ou, depois de reabrir o programa, pelo histórico."""
+    return arquivos_salvos.get(id_arquivo) or historico.caminho(id_arquivo)
+
+
 @app.route('/api/mostrar/<id_download>', methods=['POST'])
 def mostrar_na_pasta_api(id_download):
     # Abre o Explorador de Arquivos com o arquivo baixado selecionado
-    caminho = arquivos_salvos.get(id_download)
+    caminho = caminho_do_arquivo(id_download)
     if not caminho or not os.path.exists(caminho):
         return jsonify({"erro": "Arquivo não encontrado (foi movido ou apagado?)."}), 404
     if sys.platform == "win32":
@@ -214,6 +219,40 @@ def baixar_arquivo_api(id_download):
     if not caminho or not os.path.exists(caminho):
         return jsonify({"erro": "Arquivo ainda não está pronto ou não foi encontrado."}), 404
     return send_file(caminho, as_attachment=True, download_name=os.path.basename(caminho))
+
+
+# ==========================================
+# MEUS DOWNLOADS (histórico do que o programa salvou)
+# ==========================================
+
+@app.route('/api/historico', methods=['GET'])
+def historico_api():
+    return jsonify(historico.listar())
+
+
+@app.route('/api/historico/<id_arquivo>', methods=['DELETE'])
+def remover_do_historico_api(id_arquivo):
+    # Só tira da lista: o arquivo continua na pasta Downloads
+    if not historico.remover(id_arquivo):
+        return jsonify({"erro": "Esse item não está no histórico."}), 404
+    return jsonify({"mensagem": "Removido da lista."})
+
+
+@app.route('/api/historico', methods=['DELETE'])
+def limpar_historico_api():
+    historico.limpar()
+    return jsonify({"mensagem": "Histórico limpo."})
+
+
+@app.route('/api/abrir/<id_arquivo>', methods=['POST'])
+def abrir_arquivo_api(id_arquivo):
+    # Abre o arquivo no programa padrão do Windows (player de vídeo, música, fotos)
+    caminho = caminho_do_arquivo(id_arquivo)
+    if not caminho or not os.path.exists(caminho):
+        return jsonify({"erro": "Arquivo não encontrado (foi movido ou apagado?)."}), 404
+    if sys.platform == "win32":
+        os.startfile(caminho)
+    return jsonify({"mensagem": "Arquivo aberto."})
 
 
 # ==========================================
@@ -261,6 +300,7 @@ def converter_imagem_api():
             if os.path.exists(caminho_original):
                 os.remove(caminho_original)
             arquivos_salvos[id_conversao] = destino  # permite usar /api/mostrar/<id>
+            historico.registrar(id_conversao, destino, nome_sem_extensao)
             return jsonify({"id": id_conversao, "arquivo": os.path.basename(destino)})
 
         resposta = send_file(caminho_convertido, as_attachment=True, download_name=nome_download)

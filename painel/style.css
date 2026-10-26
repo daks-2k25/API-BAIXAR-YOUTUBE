@@ -902,6 +902,93 @@ input[type="url"]:focus {
 }
 
 /* ==========================================
+   Meus downloads
+   ========================================== */
+.historico-topo {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+#limpar-historico[hidden] {
+    display: none;
+}
+
+#lista-historico {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+#lista-historico:empty {
+    display: none;
+}
+
+.historico-linha {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.historico-icone {
+    display: grid;
+    place-items: center;
+    flex: 0 0 36px;
+    height: 36px;
+    border-radius: 4px;
+    background: var(--degrade);
+    color: #fff;
+    font-size: 15px;
+}
+
+.historico-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.historico-info .item-titulo {
+    font-size: 14px;
+}
+
+.historico-detalhes {
+    color: var(--texto-suave);
+    font-size: 12px;
+}
+
+.historico-item .item-acoes {
+    margin-top: 12px;
+}
+
+.item-botao.remover {
+    margin-left: auto;
+    border-color: transparent;
+    background: transparent;
+    color: var(--texto-suave);
+}
+
+.item-botao.remover:hover {
+    color: var(--erro);
+    background: #fdecec;
+    border-color: transparent;
+}
+
+/* Arquivo apagado ou movido: fica apagadinho, só com "Remover da lista" */
+.historico-item.ausente .historico-icone {
+    background: var(--borda-forte);
+}
+
+.historico-item.ausente .item-titulo {
+    color: var(--texto-suave);
+    text-decoration: line-through;
+}
+
+/* ==========================================
    Rodapé
    ========================================== */
 footer {
