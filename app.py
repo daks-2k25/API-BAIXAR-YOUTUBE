@@ -20,10 +20,11 @@ from servicos import atualizador
 atualizador.usar_versao_atualizada()  # Precisa vir antes de qualquer import do yt-dlp
 from servicos.downloader import (
     STATUS_FINAIS, adicionar_fila, arquivos_salvos, cancelar_download,
-    caminho_sem_sobrescrever, nome_de_arquivo_seguro, status_download, titulos_download,
+    caminho_sem_sobrescrever, erros_download, nome_de_arquivo_seguro, status_download, titulos_download,
 )
 from servicos.conversor import converter_heic_para_jpg
 from servicos.informacoes import obter_informacoes
+from servicos.sites import mensagem_de_erro
 from servicos import autoatualizacao
 
 # O painel web (pasta painel/) é servido pela própria API em http://localhost:5000
@@ -163,7 +164,7 @@ def info_api():
         return jsonify(obter_informacoes(url))
     except Exception as e:
         print(f"[INFO] Não foi possível obter a prévia de {url}: {e}")
-        return jsonify({"erro": "Não encontramos esse vídeo. Confira o link."}), 404
+        return jsonify({"erro": mensagem_de_erro(e)}), 404
 
 
 @app.route('/api/qualidades', methods=['GET'])
@@ -183,6 +184,7 @@ def progresso_api(id_download):
         "status": status,
         "titulo": titulos_download.get(id_download),
         "arquivo": os.path.basename(caminho) if caminho else None,  # nome do arquivo na pasta Downloads
+        "erro": erros_download.get(id_download) if status == "Erro" else None,  # motivo da falha
     })
 
 

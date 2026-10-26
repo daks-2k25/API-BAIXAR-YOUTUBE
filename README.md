@@ -1,6 +1,6 @@
 # Baixar YouTube
 
-Aplicação em Python para baixar vídeos do YouTube em **MP4** ou extrair o áudio em **MP3**, além de converter fotos **HEIC** (iPhone) para **JPG**. Abre numa **janela própria**, com uma **API REST** por trás, feita com Flask e [yt-dlp](https://github.com/yt-dlp/yt-dlp).
+Aplicação em Python para baixar vídeos do **YouTube**, **TikTok** e **Instagram** em **MP4** ou extrair o áudio em **MP3**, além de converter fotos **HEIC** (iPhone) para **JPG**. Abre numa **janela própria**, com uma **API REST** por trás, feita com Flask e [yt-dlp](https://github.com/yt-dlp/yt-dlp).
 
 ## Início rápido (Windows)
 
@@ -25,7 +25,8 @@ No primeiro clique ele também cria o atalho **Baixar YouTube**, com a logo, na 
 - **Atualização pelo próprio programa**: quando sai uma versão nova, aparece um aviso com as novidades e o botão **Atualizar agora**
 - **Notificações**: sino 🔔 com bolinha quando há versão nova, notificação no canto da janela e verificação automática a cada 30 minutos com o programa aberto
 - **Prévia do vídeo** ao colar o link: miniatura, título, canal e duração, com opção de assistir ali mesmo para conferir antes de baixar
-- Download de vídeo em **MP4** com **escolha de resolução** (360p, 480p, 720p ou 1080p), em H.264 para abrir em qualquer player
+- **YouTube, TikTok e Instagram** (vídeos e reels): é só colar o link
+- Download de vídeo em **MP4** com **escolha de resolução** (360p, 480p, 720p ou 1080p), inclusive em vídeos verticais (TikTok, Reels, Shorts). No TikTok, sempre a versão **sem marca d'água**
 - Extração de áudio em **MP3** (192 kbps)
 - **Até 3 downloads ao mesmo tempo**, com acompanhamento de progresso
 - **Nova tentativa automática** quando o YouTube falha momentaneamente
@@ -38,7 +39,7 @@ No primeiro clique ele também cria o atalho **Baixar YouTube**, com a logo, na 
 
 ## Usando o programa
 
-- **YouTube:** cole o link e confira a prévia do vídeo (clique na miniatura para assistir ali mesmo). Escolha MP4 ou MP3 e a resolução, e clique em **Baixar agora**. O arquivo é salvo na sua pasta **Downloads**; o botão **Mostrar na pasta** abre o Explorador com ele selecionado.
+- **Baixar:** cole o link do YouTube, TikTok ou Instagram e confira a prévia do vídeo (no YouTube, clique na miniatura para assistir ali mesmo). Escolha MP4 ou MP3 e a resolução, e clique em **Baixar agora**. O arquivo é salvo na sua pasta **Downloads**; o botão **Mostrar na pasta** abre o Explorador com ele selecionado.
 - **Cortar trecho:** clique em **✂ Cortar trecho** e preencha o início e o fim (ex.: `1:20` e `2:05`). Deixe o fim vazio para ir até o final do vídeo.
 - **Cancelar:** cada download tem um botão **✕ Cancelar** enquanto está na fila ou baixando.
 - **HEIC → JPG:** arraste a foto ou clique para escolher. O JPG é salvo na pasta Downloads.
@@ -48,6 +49,18 @@ No primeiro clique ele também cria o atalho **Baixar YouTube**, com a logo, na 
 - **Para fechar:** feche a janela. Se ainda houver download em andamento, o programa pergunta antes.
 
 Se clicar no atalho com o programa já aberto, a janela só vem para a frente. As mensagens do programa ficam no arquivo `BaixarYouTube.log`, útil se algo der errado. Se a janela própria não puder ser criada no PC (ex.: sem o componente WebView2 do Windows), o painel abre no navegador, como alternativa.
+
+### Instagram: posts que pedem login
+
+Reels e vídeos **públicos** do Instagram baixam sem login. Se algum post só abrir com uma conta logada, o programa avisa. Nesse caso:
+
+1. No Chrome, logado no Instagram, instale a extensão **Get cookies.txt LOCALLY**.
+2. Abra o instagram.com, clique na extensão e exporte os cookies.
+3. Salve o arquivo com o nome **`cookies.txt`** na pasta do programa (ao lado do `iniciar.bat`, ou dentro de `BaixarYouTube\` no programa gerado).
+
+O programa passa a usar esse login automaticamente. O `cookies.txt` dá acesso à sua conta: não compartilhe esse arquivo. Ele não vai para o Git e o botão de atualizar não mexe nele.
+
+> O yt-dlp não consegue ler os cookies do Chrome direto no Windows (o Chrome protege esses dados), por isso o caminho é exportar o arquivo. O Instagram baixa os vídeos; fotos de posts não são baixadas.
 
 ### Como a atualização funciona
 
@@ -78,6 +91,7 @@ API-BAIXAR-YOUTUBE/
 │   ├── atualizador.py   # Mantém o yt-dlp atualizado dentro do executável
 │   ├── downloader.py    # Fila de downloads, corte de trecho e cancelamento (yt-dlp)
 │   ├── informacoes.py   # Prévia do vídeo (título, canal, duração, miniatura)
+│   ├── sites.py         # O que é comum a YouTube, TikTok e Instagram (títulos, login, mensagens de erro)
 │   └── conversor.py     # Conversão de HEIC para JPG (FFmpeg)
 ├── logos/               # Identidade visual: logo e ícones em SVG, PNG e WebP
 ├── ferramentas/

@@ -187,7 +187,8 @@ function atualizarPrevia() {
 
             previaAtual.titulo = dados.titulo;
             previaTitulo.textContent = dados.titulo;
-            previaCanal.textContent = dados.canal || "";
+            // Ex.: "clinicavittace · Instagram"
+            previaCanal.textContent = [dados.canal, dados.site].filter(Boolean).join(" · ");
             previaDuracao.textContent = dados.duracao || "";
             campoFim.placeholder = dados.duracao || "fim"; // dica para o corte
             if (!id && dados.miniatura) mostrarMiniatura(dados.miniatura);
@@ -366,7 +367,7 @@ function criarItem(id, descricao, tituloDaPrevia) {
             clearInterval(intervalo);
             item.classList.add("erro");
             status.textContent = "Erro ao baixar";
-            acoes.innerHTML = "";
+            acoes.textContent = dados.erro || ""; // motivo (ex.: o post exige login)
         }
     }, 500);
 }

@@ -10,6 +10,7 @@ import yt_dlp
 from yt_dlp.utils import DownloadCancelled, download_range_func
 
 from servicos.caminhos import PASTA_DESTINO, PASTA_DOWNLOADS
+from servicos.sites import mensagem_de_erro, opcoes_de_login, titulo_amigavel
 
 # Quantos downloads rodam ao mesmo tempo (os outros esperam na fila)
 DOWNLOADS_SIMULTANEOS = 3
@@ -25,6 +26,7 @@ status_download = {}
 titulos_download = {}  # ID -> título do vídeo
 arquivos_salvos = {}   # ID -> caminho do arquivo pronto na pasta Downloads
 cancelados = set()     # IDs que o usuário pediu para cancelar
+erros_download = {}    # ID -> mensagem explicando por que o download falhou
 fila_downloads = queue.Queue()
 
 
@@ -113,6 +115,7 @@ def processar(tarefa):
         'concurrent_fragment_downloads': 4,  # Baixa 4 partes ao mesmo tempo quando o vídeo vem fatiado
         'progress_hooks': [hook_progresso],
         'postprocessor_hooks': [hook_processamento],
+        **opcoes_de_login(),  # cookies.txt, se existir (posts do Instagram que pedem login)
     }
 
     if formato == "mp3":
@@ -127,11 +130,14 @@ def processar(tarefa):
             'postprocessor_args': {'extractaudio': ['-compression_level', '7']},
         })
     else:
-        # Nunca passa da qualidade escolhida (máximo 1080p)
         ydl_opts.update({
-            'format': f'bestvideo[height<={qualidade}]+bestaudio/best[height<={qualidade}]',
-            # Prefere H.264 + AAC: arquivo menor que AV1 HDR, baixa mais rápido
-            # e abre em qualquer player
+            # Melhor vídeo + áudio, nunca a versão com marca d'água (TikTok)
+            'format': 'bv*[format_note!*=?watermark]+ba/b[format_note!*=?watermark]',
+            # "res" é a MENOR dimensão do vídeo: 720p vale tanto para 1280x720
+            # (horizontal) quanto para 720x1280 (vertical: TikTok, Reels, Shorts).
+            # Nunca passa da qualidade escolhida (máximo 1080p).
+            # Depois prefere H.264 + AAC: arquivo menor que AV1 HDR, baixa mais
+            # rápido e abre em qualquer player
             'format_sort': [f'res:{qualidade}', 'vcodec:h264', 'acodec:m4a'],
             'merge_output_format': 'mp4',
             # Garante .mp4 mesmo se vier um arquivo único em outro formato (ex.: .webm)
@@ -159,7 +165,7 @@ def processar(tarefa):
                 parar_se_cancelado()
 
                 if os.path.exists(caminho_temporario):
-                    titulo = info.get("title") or id_download
+                    titulo = titulo_amigavel(info)
                     nome = nome_de_arquivo_seguro(titulo)
                     if trecho:
                         inicio, fim = trecho
@@ -184,6 +190,7 @@ def processar(tarefa):
                 if id_download in cancelados:
                     raise DownloadCancelled("Cancelado pelo usuário")
                 print(f"[FILA] Erro no ID {id_download} (tentativa {tentativa}/{TENTATIVAS}): {e}")
+                erros_download[id_download] = mensagem_de_erro(e)
 
             if tentativa < TENTATIVAS:
                 time.sleep(2)

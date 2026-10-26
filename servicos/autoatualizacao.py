@@ -40,7 +40,7 @@ ARQUIVO_MANIFESTO = os.path.join(PASTA_PROJETO, ".arquivos_do_programa.txt")
 PROTEGIDOS = (
     ".git", ".ambiente", ".venv", "downloads", "BaixarYouTube", "atualizacoes",
     "ferramentas/compilacao", ".atalho_criado", ".arquivos_do_programa.txt",
-    ".preferencias.json",
+    ".preferencias.json", "cookies.txt",
 )
 
 # Guarda a versão que a pessoa mandou "lembrar depois" (fica ao lado do programa)
