@@ -635,9 +635,40 @@ async function reabrirComoAplicativo() {
         <div class="brilho"></div>
         <div class="encerrado">
             <h1>Abrindo como aplicativo...</h1>
-            <p>A janela do programa vai abrir em alguns segundos. Pode fechar esta aba.</p>
+            <p>A janela do programa vai abrir em alguns segundos.</p>
         </div>
     `;
+    const mensagem = document.querySelector(".encerrado p");
+
+    // Espera o programa fechar e voltar já como aplicativo; aí fecha esta aba
+    // sozinha. O navegador só deixa fechar a aba que o programa abriu (sem
+    // outras páginas no histórico); se não deixar, fica o aviso para fechar.
+    const pausa = (ms) => new Promise((pronto) => setTimeout(pronto, ms));
+    const inicio = Date.now();
+    let caiu = false;
+    let voltouEm = null;
+
+    while (Date.now() - inicio < 30000) {
+        await pausa(700);
+        try {
+            const modo = await (await fetch("/api/modo", { cache: "no-store" })).json();
+            if (!caiu) continue; // ainda é o programa antigo, fechando
+            voltouEm ??= Date.now();
+            // O servidor volta um instante antes de a janela existir: espera ela
+            // aparecer (se não aparecer, o programa abriu no navegador)
+            if (!modo.janela && Date.now() - voltouEm < 8000) continue;
+
+            document.querySelector(".encerrado h1").textContent = "Pronto!";
+            mensagem.textContent = modo.janela
+                ? "O aplicativo foi aberto. Pode fechar esta aba."
+                : "O painel abriu em outra aba. Pode fechar esta.";
+            window.close();
+            return;
+        } catch {
+            caiu = true;
+        }
+    }
+    mensagem.textContent = "O aplicativo não abriu. Abra pelo atalho Baixar YouTube na Área de Trabalho.";
 }
 
 botaoAbrirNavegador.addEventListener("click", abrirNoNavegadorAgora);

@@ -359,6 +359,13 @@ def esperar_servidor(limite_segundos=10):
     return False
 
 
+def esperar_porta_livre(limite_segundos=15):
+    """Ao reiniciar: espera o programa antigo terminar de fechar e soltar a porta."""
+    limite = time.time() + limite_segundos
+    while ja_esta_rodando() and time.time() < limite:
+        time.sleep(0.2)
+
+
 def reiniciar_programa(modo):
     """Abre o programa de novo daqui a ~2 segundos (tempo de este processo fechar),
     já no modo pedido ("janela" ou "navegador")."""
@@ -604,6 +611,12 @@ def usar_navegador(servidor, abrir=True):
 
 
 if __name__ == "__main__":
+    # Reiniciando pelo painel: o programa antigo ainda pode estar fechando. Sem
+    # esperar, ele seria confundido com "já está aberto" e o navegador abriria
+    # uma aba que dá "conexão recusada" logo depois que ele fecha.
+    if os.environ.get("BAIXAR_YOUTUBE_MODO"):
+        esperar_porta_livre()
+
     # Clicou de novo com o programa já aberto: só traz a janela para a frente
     if ja_esta_rodando():
         try:
