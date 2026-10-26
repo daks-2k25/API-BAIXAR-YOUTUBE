@@ -15,7 +15,7 @@ import webbrowser
 from urllib.parse import urlparse, parse_qs
 
 # Importando as ferramentas da pasta servicos/
-from servicos.caminhos import PASTA_DESTINO, PASTA_DOWNLOADS, PASTA_PAINEL
+from servicos.caminhos import EXECUTAVEL, PASTA_DESTINO, PASTA_DOWNLOADS, PASTA_PAINEL
 from servicos import atualizador
 atualizador.usar_versao_atualizada()  # Precisa vir antes de qualquer import do yt-dlp
 from servicos.downloader import (
@@ -25,7 +25,7 @@ from servicos.downloader import (
 from servicos.conversor import converter_heic_para_jpg
 from servicos.informacoes import obter_informacoes
 from servicos.sites import mensagem_de_erro
-from servicos import autoatualizacao
+from servicos import autoatualizacao, preferencias
 
 # O painel web (pasta painel/) é servido pela própria API em http://localhost:5000
 app = Flask(__name__, static_folder=PASTA_PAINEL, static_url_path="")
@@ -280,6 +280,8 @@ ENDERECO_PAINEL = f"http://127.0.0.1:{PORTA}"
 # Janela própria do programa (pywebview). Fica None quando o painel abre no
 # navegador, o que acontece só se a janela não puder ser criada neste PC.
 janela = None
+# Virou True quando a pessoa clica em "Abrir no navegador": a janela fecha, mas o programa continua
+trocando_para_navegador = False
 
 # Modo navegador: o programa fecha sozinho quando ninguém está com o painel
 # aberto há esse tempo e não há downloads em andamento
@@ -304,6 +306,22 @@ def esperar_servidor(limite_segundos=10):
     return False
 
 
+def reiniciar_programa(modo):
+    """Abre o programa de novo daqui a ~2 segundos (tempo de este processo fechar),
+    já no modo pedido ("janela" ou "navegador")."""
+    if EXECUTAVEL:
+        pasta, comando = os.path.dirname(sys.executable), f'"{sys.executable}"'
+    else:
+        pasta = os.path.dirname(os.path.abspath(__file__))
+        comando = f'"{sys.executable}" "{os.path.abspath(__file__)}"'
+    # "ping" para esperar: o "timeout" do Windows falha quando não há janela de console
+    subprocess.Popen(
+        f'cmd /c ping -n 3 127.0.0.1 >nul & start "" {comando}',
+        cwd=pasta, env=dict(os.environ, BAIXAR_YOUTUBE_MODO=modo),
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
+
+
 def encerrar_programa():
     print("Encerrando o programa...")
     os._exit(0)
@@ -316,7 +334,10 @@ def ha_downloads_em_andamento():
 @app.route('/api/modo', methods=['GET'])
 def modo_api():
     # O painel esconde o botão "Encerrar" quando está na janela própria
-    return jsonify({"janela": janela is not None})
+    return jsonify({
+        "janela": janela is not None and not trocando_para_navegador,
+        "preferencia": preferencias.modo_de_abertura(),
+    })
 
 
 @app.route('/api/ping', methods=['POST'])
@@ -344,6 +365,42 @@ def focar_api():
         janela.on_top = False  # janela passar na frente das outras
     else:
         webbrowser.open(ENDERECO_PAINEL)
+    return jsonify({"ok": True})
+
+
+@app.route('/api/preferencias', methods=['GET'])
+def preferencias_api():
+    return jsonify({"modo_abertura": preferencias.modo_de_abertura()})
+
+
+@app.route('/api/preferencias', methods=['POST'])
+def salvar_preferencias_api():
+    # Configurações do painel: abrir sempre na janela do aplicativo ou no navegador
+    modo = (request.get_json(silent=True) or {}).get("modo_abertura")
+    if modo not in preferencias.MODOS_DE_ABERTURA:
+        return jsonify({"erro": "Use 'janela' ou 'navegador'."}), 400
+    preferencias.salvar("modo_abertura", modo)
+    return jsonify({"modo_abertura": modo})
+
+
+@app.route('/api/abrir-no-navegador', methods=['POST'])
+def abrir_no_navegador_api():
+    # Abre o painel no navegador agora e fecha a janela; o programa continua rodando
+    global trocando_para_navegador
+    if janela is not None:
+        trocando_para_navegador = True
+        threading.Timer(0.3, janela.destroy).start()
+    webbrowser.open(ENDERECO_PAINEL)
+    return jsonify({"ok": True})
+
+
+@app.route('/api/reabrir-como-aplicativo', methods=['POST'])
+def reabrir_como_aplicativo_api():
+    # No navegador: reinicia o programa já na janela do aplicativo
+    if janela is not None and not trocando_para_navegador:
+        return jsonify({"erro": "O programa já está aberto como aplicativo."}), 409
+    reiniciar_programa("janela")
+    threading.Timer(0.5, encerrar_programa).start()
     return jsonify({"ok": True})
 
 
@@ -464,6 +521,9 @@ def abrir_janela():
             print(f"[JANELA] Não foi possível colocar o ícone: {e}")
 
     def ao_fechar():
+        # Trocando para o navegador: o programa continua, então não precisa perguntar
+        if trocando_para_navegador:
+            return True
         # Avisa antes de fechar se ainda há download acontecendo
         if ha_downloads_em_andamento():
             return janela.create_confirmation_dialog(
@@ -475,6 +535,19 @@ def abrir_janela():
     janela.events.shown += ao_mostrar
     janela.events.closing += ao_fechar
     webview.start(gui="edgechromium")
+
+
+def usar_navegador(servidor, abrir=True):
+    """Modo navegador: o painel fica numa aba e o programa roda em segundo plano.
+    Fecha sozinho 3 minutos depois que nenhuma aba estiver aberta (sem downloads)."""
+    global janela, ultimo_sinal_do_painel
+    janela = None
+    ultimo_sinal_do_painel = time.time()
+    print(f"Painel no navegador: {ENDERECO_PAINEL}")
+    if abrir:
+        webbrowser.open(ENDERECO_PAINEL)
+    threading.Thread(target=fechar_quando_ninguem_usar, daemon=True).start()
+    servidor.join()
 
 
 if __name__ == "__main__":
@@ -495,14 +568,21 @@ if __name__ == "__main__":
     esperar_servidor()
     atualizador.verificar_atualizacao()  # Só faz algo dentro do .exe, uma vez por dia
 
-    try:
-        abrir_janela()
-        encerrar_programa()  # a janela foi fechada
-    except Exception as e:
-        # Sem a janela (ex.: WebView2 ausente), usa o navegador como antes
-        janela = None
-        print(f"[JANELA] Não foi possível abrir a janela própria ({e}); usando o navegador.")
-        print(f"Painel: {ENDERECO_PAINEL}")
-        webbrowser.open(ENDERECO_PAINEL)
-        threading.Thread(target=fechar_quando_ninguem_usar, daemon=True).start()
-        servidor.join()
+    # Janela do aplicativo ou navegador: escolhido em Configurações (⚙) no painel.
+    # BAIXAR_YOUTUBE_MODO força um modo uma vez (usado ao reabrir pelo painel).
+    modo = os.environ.pop("BAIXAR_YOUTUBE_MODO", "") or preferencias.modo_de_abertura()
+
+    if modo == "janela":
+        try:
+            abrir_janela()
+        except Exception as e:
+            # Sem a janela (ex.: WebView2 ausente), usa o navegador
+            print(f"[JANELA] Não foi possível abrir a janela própria ({e}); usando o navegador.")
+            usar_navegador(servidor)
+        else:
+            if not trocando_para_navegador:
+                encerrar_programa()  # a janela foi fechada
+            # "Abrir no navegador": a aba já foi aberta; o programa segue no navegador
+            usar_navegador(servidor, abrir=False)
+    else:
+        usar_navegador(servidor)

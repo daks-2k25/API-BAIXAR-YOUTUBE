@@ -21,7 +21,7 @@ No primeiro clique ele também cria o atalho **Baixar YouTube**, com a logo, na 
 
 ## Funcionalidades
 
-- **Janela própria** (não precisa do navegador): fechar a janela fecha o programa
+- **Janela própria ou navegador**: abre como aplicativo (fechar a janela fecha o programa) ou, se preferir, no navegador. Dá para escolher em **⚙ Configurações**
 - **Atualização pelo próprio programa**: quando sai uma versão nova, aparece um aviso com as novidades e o botão **Atualizar agora**
 - **Notificações**: sino 🔔 com bolinha quando há versão nova, notificação no canto da janela e verificação automática a cada 30 minutos com o programa aberto
 - **Prévia do vídeo** ao colar o link: miniatura, título, canal e duração, com opção de assistir ali mesmo para conferir antes de baixar
@@ -47,8 +47,12 @@ No primeiro clique ele também cria o atalho **Baixar YouTube**, com a logo, na 
 - **Depois:** se preferir atualizar mais tarde, clique em **Depois**. A notificação não volta para essa versão (o sino continua com a bolinha, e a atualização fica disponível nele). Se sair uma versão ainda mais nova, o programa avisa de novo.
 - **Sino 🔔:** mostra a atualização disponível ou confirma que você está na versão mais recente, com o botão **Verificar agora**.
 - **Para fechar:** feche a janela. Se ainda houver download em andamento, o programa pergunta antes.
+- **Janela ou navegador:** em **⚙ Configurações** (ao lado do sino), escolha se o programa abre na **Janela do aplicativo** ou no **Navegador**. A escolha fica salva para as próximas vezes. Para trocar na hora:
+  - Na janela, o botão **↗** (ou **Abrir no navegador agora**, nas Configurações) abre o painel no navegador e fecha a janela; o programa continua rodando.
+  - No navegador, **Reabrir como aplicativo** (nas Configurações) reinicia o programa na janela.
+  - No navegador, o programa fecha pelo botão **Encerrar programa** ou sozinho, 3 minutos depois de fechar todas as abas (se não houver downloads).
 
-Se clicar no atalho com o programa já aberto, a janela só vem para a frente. As mensagens do programa ficam no arquivo `BaixarYouTube.log`, útil se algo der errado. Se a janela própria não puder ser criada no PC (ex.: sem o componente WebView2 do Windows), o painel abre no navegador, como alternativa.
+Se clicar no atalho com o programa já aberto, ele só traz a janela para a frente (ou abre o painel no navegador, se estiver nesse modo). As mensagens do programa ficam no arquivo `BaixarYouTube.log`, útil se algo der errado. Se a janela própria não puder ser criada no PC (ex.: sem o componente WebView2 do Windows), o painel abre no navegador, como alternativa.
 
 ### Instagram: posts que pedem login
 
@@ -87,6 +91,7 @@ API-BAIXAR-YOUTUBE/
 │                        # + logo.webp, favicon.svg e icone.ico (ícone do programa)
 ├── servicos/
 │   ├── caminhos.py      # Pastas do projeto e pasta Downloads do usuário
+│   ├── preferencias.py  # Preferências salvas (.preferencias.json): modo de abertura, atualização adiada
 │   ├── autoatualizacao.py # Botão "Atualizar agora": baixa e instala a versão nova
 │   ├── atualizador.py   # Mantém o yt-dlp atualizado dentro do executável
 │   ├── downloader.py    # Fila de downloads, corte de trecho e cancelamento (yt-dlp)
@@ -265,6 +270,14 @@ Corpo: `{"versao": "2.1.0"}`. Usado pelo botão **Depois**: o painel não mostra
 ### `POST /api/atualizar`
 
 Baixa e instala a versão nova e reinicia o programa. Responde `409` se houver downloads em andamento.
+
+### `GET /api/preferencias` e `POST /api/preferencias`
+
+Lê ou salva como o programa abre: `{"modo_abertura": "janela"}` ou `{"modo_abertura": "navegador"}`. Vale a partir da próxima vez que o programa abrir.
+
+### `POST /api/abrir-no-navegador` e `POST /api/reabrir-como-aplicativo`
+
+Trocam o modo na hora: a primeira abre o painel no navegador e fecha a janela (o programa continua rodando); a segunda reinicia o programa na janela do aplicativo.
 
 ### `GET /api/modo` e `POST /api/focar`
 

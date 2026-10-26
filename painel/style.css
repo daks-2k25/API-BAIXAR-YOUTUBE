@@ -111,10 +111,22 @@ h1 span {
 /* ==========================================
    Sino de notificações
    ========================================== */
-.sino {
+/* Botões do canto: abrir no navegador, configurações e sino */
+.acoes-topo {
     position: absolute;
     top: 0;
     right: 0;
+    z-index: 11;
+    display: flex;
+    gap: 8px;
+}
+
+.botao-topo[hidden] {
+    display: none;
+}
+
+.botao-topo {
+    position: relative;
     display: grid;
     place-items: center;
     width: 40px;
@@ -128,8 +140,8 @@ h1 span {
     transition: 0.2s;
 }
 
-.sino:hover,
-.sino.aberto {
+.botao-topo:hover,
+.botao-topo.aberto {
     color: var(--texto);
     border-color: var(--borda-forte);
 }
@@ -176,6 +188,36 @@ h1 span {
     font-weight: 500;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+}
+
+.configuracoes.escondido {
+    display: none;
+}
+
+.config-rotulo {
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.config-opcoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.config-dica {
+    margin: 10px 0 12px;
+    color: var(--texto-suave);
+    font-size: 13px;
+}
+
+.config-dica:empty {
+    display: none;
+}
+
+#config-trocar {
+    margin-top: 4px;
+    font-size: 13px;
 }
 
 .notificacao-item strong {

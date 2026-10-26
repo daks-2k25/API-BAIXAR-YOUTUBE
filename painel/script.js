@@ -429,17 +429,88 @@ function avisarQuePainelEstaAberto() {
     fetch("/api/ping", { method: "POST" }).catch(() => {});
 }
 
+// ==========================================
+// CONFIGURAÇÕES: abrir na janela do aplicativo ou no navegador
+// ==========================================
+const botaoConfig = document.getElementById("config");
+const painelConfig = document.getElementById("configuracoes");
+const botaoAbrirNavegador = document.getElementById("abrir-navegador");
+const botaoTrocarAgora = document.getElementById("config-trocar");
+const dicaConfig = document.getElementById("config-dica");
+let modoAtual = { janela: false, preferencia: "janela" };
+
 fetch("/api/modo")
     .then((r) => r.json())
     .then((modo) => {
+        modoAtual = modo;
         if (modo.janela) {
             document.getElementById("encerrar").hidden = true;
+            botaoAbrirNavegador.hidden = false; // atalho ↗ só faz sentido na janela
         } else {
             avisarQuePainelEstaAberto();
             setInterval(avisarQuePainelEstaAberto, 30000);
         }
+        montarConfiguracoes();
     })
     .catch(() => {});
+
+function montarConfiguracoes() {
+    document.querySelectorAll("#config-modo .chip").forEach((chip) => {
+        chip.classList.toggle("ativo", chip.dataset.modo === modoAtual.preferencia);
+    });
+    botaoTrocarAgora.textContent = modoAtual.janela ? "↗ Abrir no navegador agora" : "Reabrir como aplicativo";
+}
+
+botaoConfig.addEventListener("click", (evento) => {
+    evento.stopPropagation();
+    const abrir = painelConfig.classList.contains("escondido");
+    painelConfig.classList.toggle("escondido", !abrir);
+    botaoConfig.classList.toggle("aberto", abrir);
+    painelNotificacoes.classList.add("escondido");
+    sino.classList.remove("aberto");
+    dicaConfig.textContent = "";
+});
+
+// Escolher como o programa abre (vale a partir da próxima vez)
+document.querySelectorAll("#config-modo .chip").forEach((chip) => {
+    chip.addEventListener("click", async () => {
+        const resposta = await fetch("/api/preferencias", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ modo_abertura: chip.dataset.modo }),
+        }).catch(() => null);
+        if (!resposta || !resposta.ok) {
+            dicaConfig.textContent = "Não foi possível salvar. Tente de novo.";
+            return;
+        }
+        modoAtual.preferencia = chip.dataset.modo;
+        montarConfiguracoes();
+        dicaConfig.textContent = chip.dataset.modo === "navegador"
+            ? "✓ Salvo. Das próximas vezes, o programa abre no navegador."
+            : "✓ Salvo. Das próximas vezes, o programa abre na janela do aplicativo.";
+    });
+});
+
+async function abrirNoNavegadorAgora() {
+    // A janela fecha e o painel abre no navegador; o programa continua rodando
+    await fetch("/api/abrir-no-navegador", { method: "POST" }).catch(() => {});
+}
+
+async function reabrirComoAplicativo() {
+    await fetch("/api/reabrir-como-aplicativo", { method: "POST" }).catch(() => {});
+    document.body.innerHTML = `
+        <div class="brilho"></div>
+        <div class="encerrado">
+            <h1>Abrindo como aplicativo...</h1>
+            <p>A janela do programa vai abrir em alguns segundos. Pode fechar esta aba.</p>
+        </div>
+    `;
+}
+
+botaoAbrirNavegador.addEventListener("click", abrirNoNavegadorAgora);
+botaoTrocarAgora.addEventListener("click", () =>
+    modoAtual.janela ? abrirNoNavegadorAgora() : reabrirComoAplicativo()
+);
 
 document.getElementById("encerrar").addEventListener("click", async () => {
     if (!confirm("Encerrar o programa? Downloads em andamento serão interrompidos.")) return;
@@ -566,13 +637,19 @@ sino.addEventListener("click", (evento) => {
     painelNotificacoes.classList.toggle("escondido", !abrir);
     sino.classList.toggle("aberto", abrir);
     if (abrir) toast.classList.add("escondido");
+    painelConfig.classList.add("escondido");
+    botaoConfig.classList.remove("aberto");
 });
 
-// Clicar fora fecha o painelzinho de notificações
+// Clicar fora fecha os painelzinhos (notificações e configurações)
 document.addEventListener("click", (evento) => {
     if (!painelNotificacoes.contains(evento.target)) {
         painelNotificacoes.classList.add("escondido");
         sino.classList.remove("aberto");
+    }
+    if (!painelConfig.contains(evento.target)) {
+        painelConfig.classList.add("escondido");
+        botaoConfig.classList.remove("aberto");
     }
 });
 

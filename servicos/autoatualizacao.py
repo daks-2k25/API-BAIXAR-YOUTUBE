@@ -24,7 +24,8 @@ import time
 import urllib.request
 import zipfile
 
-from servicos.caminhos import EXECUTAVEL, PASTA_BASE, PASTA_RECURSOS
+from servicos import preferencias
+from servicos.caminhos import EXECUTAVEL, PASTA_RECURSOS
 
 REPOSITORIO = "daks-2k25/API-BAIXAR-YOUTUBE"
 RAMO = "main"
@@ -43,8 +44,6 @@ PROTEGIDOS = (
     ".preferencias.json", "cookies.txt",
 )
 
-# Guarda a versão que a pessoa mandou "lembrar depois" (fica ao lado do programa)
-ARQUIVO_PREFERENCIAS = os.path.join(PASTA_BASE, ".preferencias.json")
 
 # Guarda a última consulta ao GitHub por alguns minutos
 _cache = {"momento": 0, "dados": None}
@@ -63,24 +62,13 @@ def versao_instalada():
         return "0"
 
 
-def _ler_preferencias():
-    try:
-        with open(ARQUIVO_PREFERENCIAS, encoding="utf-8") as f:
-            return json.load(f)
-    except (OSError, ValueError):
-        return {}
-
-
 def versao_adiada():
     """Versão nova que a pessoa mandou avisar depois (não mostra a notificação de novo)."""
-    return _ler_preferencias().get("atualizacao_adiada")
+    return preferencias.obter("atualizacao_adiada")
 
 
 def adiar(versao):
-    preferencias = _ler_preferencias()
-    preferencias["atualizacao_adiada"] = str(versao)
-    with open(ARQUIVO_PREFERENCIAS, "w", encoding="utf-8") as f:
-        json.dump(preferencias, f, ensure_ascii=False, indent=2)
+    preferencias.salvar("atualizacao_adiada", str(versao))
 
 
 def _git(*argumentos):
@@ -222,7 +210,8 @@ def reiniciar():
     O iniciar.bat instala bibliotecas novas, se houver, e abre o programa de novo."""
     iniciar = os.path.join(PASTA_PROJETO, "iniciar.bat")
     sem_janela = getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+    # "ping" para esperar: o "timeout" do Windows falha quando não há janela de console
     subprocess.Popen(
-        f'cmd /c timeout /t 2 /nobreak >nul & "{iniciar}"',
+        f'cmd /c ping -n 3 127.0.0.1 >nul & "{iniciar}"',
         cwd=PASTA_PROJETO, creationflags=sem_janela, close_fds=True,
     )
