@@ -453,4 +453,69 @@ document.getElementById("encerrar").addEventListener("click", async () => {
     `;
 });
 
+// ==========================================
+// ATUALIZAÇÃO DO PROGRAMA
+// ==========================================
+const avisoAtualizacao = document.getElementById("aviso-atualizacao");
+const botaoAtualizar = document.getElementById("botao-atualizar");
+const mensagemAtualizacao = document.getElementById("atualizacao-mensagem");
+
+async function verificarAtualizacao() {
+    let dados;
+    try {
+        dados = await (await fetch("/api/versao")).json();
+    } catch {
+        return;
+    }
+    document.getElementById("versao").textContent = `Versão ${dados.atual}`;
+    if (!dados.disponivel) return;
+
+    document.getElementById("atualizacao-titulo").textContent = `✨ Nova versão ${dados.nova} disponível`;
+    const lista = document.getElementById("atualizacao-novidades");
+    lista.innerHTML = "";
+    dados.novidades.forEach((novidade) => {
+        const item = document.createElement("li");
+        item.textContent = novidade; // textContent: o texto vem de fora
+        lista.appendChild(item);
+    });
+    botaoAtualizar.hidden = !dados.pode_atualizar;
+    mensagemAtualizacao.textContent = dados.pode_atualizar ? "" : dados.motivo;
+    avisoAtualizacao.classList.remove("escondido");
+}
+
+botaoAtualizar.addEventListener("click", async () => {
+    botaoAtualizar.disabled = true;
+    botaoAtualizar.textContent = "Atualizando...";
+    mensagemAtualizacao.textContent = "Baixando a versão nova. Não feche o programa.";
+
+    const resposta = await fetch("/api/atualizar", { method: "POST" }).catch(() => null);
+    const dados = resposta ? await resposta.json().catch(() => ({})) : {};
+
+    if (!resposta || !resposta.ok) {
+        mensagemAtualizacao.textContent = dados.erro || "Não foi possível atualizar. Tente de novo.";
+        botaoAtualizar.disabled = false;
+        botaoAtualizar.textContent = "⬆ Tentar de novo";
+        return;
+    }
+
+    botaoAtualizar.hidden = true;
+    mensagemAtualizacao.textContent = `✓ Atualizado para a versão ${dados.versao}. Reiniciando o programa...`;
+
+    // No navegador: espera o programa voltar e recarrega a página.
+    // Na janela própria, ela fecha e abre de novo sozinha.
+    let caiu = false;
+    const esperar = setInterval(async () => {
+        try {
+            await fetch("/api/modo", { cache: "no-store" });
+            if (caiu) {
+                clearInterval(esperar);
+                location.reload();
+            }
+        } catch {
+            caiu = true;
+        }
+    }, 1000);
+});
+
 carregarQualidades();
+verificarAtualizacao();

@@ -24,6 +24,7 @@ from servicos.downloader import (
 )
 from servicos.conversor import converter_heic_para_jpg
 from servicos.informacoes import obter_informacoes
+from servicos import autoatualizacao
 
 # O painel web (pasta painel/) é servido pela própria API em http://localhost:5000
 app = Flask(__name__, static_folder=PASTA_PAINEL, static_url_path="")
@@ -342,6 +343,28 @@ def focar_api():
     else:
         webbrowser.open(ENDERECO_PAINEL)
     return jsonify({"ok": True})
+
+
+@app.route('/api/versao', methods=['GET'])
+def versao_api():
+    # Versão instalada e, se houver, a versão nova disponível no GitHub
+    return jsonify(autoatualizacao.verificar(forcar=request.args.get('forcar') == '1'))
+
+
+@app.route('/api/atualizar', methods=['POST'])
+def atualizar_api():
+    if ha_downloads_em_andamento():
+        return jsonify({"erro": "Espere os downloads terminarem (ou cancele) antes de atualizar."}), 409
+    try:
+        autoatualizacao.aplicar()
+    except Exception as e:
+        print(f"[ATUALIZAÇÃO] Falhou: {e}")
+        return jsonify({"erro": f"Não foi possível atualizar: {e}"}), 500
+
+    # Responde ao painel e reinicia já na versão nova
+    autoatualizacao.reiniciar()
+    threading.Timer(0.5, encerrar_programa).start()
+    return jsonify({"mensagem": "Atualizado! Reiniciando...", "versao": autoatualizacao.versao_instalada()})
 
 
 def fechar_quando_ninguem_usar():

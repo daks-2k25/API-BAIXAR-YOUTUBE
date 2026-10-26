@@ -42,6 +42,7 @@ uv run --no-dev --with pyinstaller python -m PyInstaller --noconfirm --onedir --
     --distpath "%PROJETO%" ^
     --icon "%PROJETO%\painel\icone.ico" ^
     --add-data "%PROJETO%\painel;painel" ^
+    --add-data "%PROJETO%\versao.json;." ^
     --collect-submodules yt_dlp ^
     "%PROJETO%\app.py"
 

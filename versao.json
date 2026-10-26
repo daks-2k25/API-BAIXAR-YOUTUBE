@@ -1,0 +1,9 @@
+{
+  "versao": "2.0.0",
+  "novidades": [
+    "O programa abre numa janela própria, sem precisar do navegador",
+    "Fechar a janela fecha o programa",
+    "Instalação mais rápida e confiável",
+    "Botão para atualizar o programa por aqui mesmo"
+  ]
+}

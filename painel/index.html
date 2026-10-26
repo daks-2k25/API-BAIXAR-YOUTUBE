@@ -25,6 +25,16 @@
         </p>
       </header>
 
+      <!-- Aviso de versão nova (preenchido pelo script.js com /api/versao) -->
+      <div id="aviso-atualizacao" class="atualizacao escondido">
+        <strong id="atualizacao-titulo"></strong>
+        <ul id="atualizacao-novidades"></ul>
+        <button type="button" id="botao-atualizar" class="botao-atualizar">
+          ⬆ Atualizar agora
+        </button>
+        <p id="atualizacao-mensagem" class="atualizacao-mensagem"></p>
+      </div>
+
       <!-- Abas -->
       <nav class="abas">
         <button class="aba ativa" data-aba="youtube">YouTube</button>
@@ -122,6 +132,7 @@
 
       <footer>
         <p>Os vídeos e músicas são salvos na sua pasta Downloads.</p>
+        <p id="versao" class="versao"></p>
         <button id="encerrar" class="encerrar">⏻ Encerrar programa</button>
       </footer>
     </main>
