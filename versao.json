@@ -1,9 +1,9 @@
 {
-  "versao": "2.0.0",
+  "versao": "2.1.0",
   "novidades": [
-    "O programa abre numa janela própria, sem precisar do navegador",
-    "Fechar a janela fecha o programa",
-    "Instalação mais rápida e confiável",
-    "Botão para atualizar o programa por aqui mesmo"
+    "Agora também baixa vídeos do TikTok e do Instagram",
+    "Visual novo, mais claro, com a logo nova",
+    "Sino de notificações: avisa quando sair uma versão nova",
+    "Vídeos verticais (TikTok, Reels e Shorts) na qualidade certa"
   ]
 }
