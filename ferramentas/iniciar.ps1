@@ -1,23 +1,30 @@
-﻿# Prepara tudo o que o Baixar YouTube precisa e abre o painel no navegador.
-# É chamado pelo iniciar.bat.
+﻿# Prepara tudo o que o Baixar YouTube precisa e abre o programa.
+# É chamado pelo iniciar.bat (e pelo atalho "Baixar YouTube" da Área de Trabalho).
 #
-# Na primeira vez, instala sozinho o que estiver faltando (Python, FFmpeg, Deno
-# e as bibliotecas do Python) usando o winget, que já vem no Windows 10 e 11.
+# Na primeira vez, instala sozinho o que estiver faltando:
+#   - uv: cuida do Python e das bibliotecas (usa o Python do PC ou baixa um, sem
+#     instalar nada no Windows)
+#   - FFmpeg e Deno: pelo winget, que já vem no Windows 10 e 11
 # Nas próximas vezes, vê que está tudo pronto e abre direto.
 
 # "Continue" e não "Stop": no PowerShell 5.1, com "Stop", qualquer texto que um
-# programa escreva no stderr (ex.: o Traceback do Python quando falta uma
-# biblioteca) vira uma exceção e interrompe o script. Os erros de verdade são
-# conferidos pelo código de saída ($LASTEXITCODE) de cada comando.
+# programa escreva no stderr vira uma exceção e interrompe o script. Os erros de
+# verdade são conferidos pelo código de saída ($LASTEXITCODE) de cada comando.
 $ErrorActionPreference = "Continue"
 
-# winget e pip escrevem em UTF-8; sem isso os acentos saem embaralhados
+# winget e uv escrevem em UTF-8; sem isso os acentos saem embaralhados
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 $Projeto = Split-Path -Parent $PSScriptRoot
 Set-Location $Projeto
 $Host.UI.RawUI.WindowTitle = "Baixar YouTube"
 $instalouAlgo = $false
+
+# Ambiente do programa (Python + bibliotecas) fica na pasta .ambiente do projeto
+$env:UV_PROJECT_ENVIRONMENT = Join-Path $Projeto ".ambiente"
+# Prefere o Python já instalado no PC (assinado pela Microsoft/PSF); só baixa
+# um se não houver nenhum
+$env:UV_PYTHON_PREFERENCE = "system"
 
 function Escrever($texto, $cor = "Gray") {
     Write-Host $texto -ForegroundColor $cor
@@ -48,6 +55,14 @@ function Instalar-Com-Winget($id, $nome) {
     $script:instalouAlgo = $true
 }
 
+function Garantir-Programa($comando, $idWinget, $nome) {
+    if (Get-Command $comando -ErrorAction SilentlyContinue) { return }
+    Instalar-Com-Winget $idWinget $nome
+    if (-not (Get-Command $comando -ErrorAction SilentlyContinue)) {
+        throw "O $nome foi instalado, mas não consegui encontrá-lo. Feche esta janela e abra o iniciar.bat de novo."
+    }
+}
+
 function Criar-Atalho {
     # GetFolderPath acha a Área de Trabalho certa, mesmo quando ela está no OneDrive
     $areaDeTrabalho = [Environment]::GetFolderPath("Desktop")
@@ -69,86 +84,52 @@ function Criar-Atalho {
     $novo.TargetPath = $alvo
     $novo.WorkingDirectory = $Projeto
     $novo.IconLocation = Join-Path $Projeto "painel\icone.ico"
-    $novo.Description = "Abre o painel do Baixar YouTube"
-    $novo.WindowStyle = 7 # minimizado: só o navegador aparece
+    $novo.Description = "Abre o Baixar YouTube"
+    $novo.WindowStyle = 7 # minimizado: só a janela do programa aparece
     $novo.Save()
     Set-Content $marca (Get-Date).ToString("yyyy-MM-dd")
     Escrever "Atalho `"Baixar YouTube`" criado na Área de Trabalho." Green
-}
-
-function Encontrar-Python {
-    # Testa cada Python possível e devolve o caminho real do primeiro que funcionar
-    # (o "python" da Microsoft Store pode ser só um atalho que não roda nada)
-    $teste = "import sys; print(sys.executable if sys.version_info >= (3, 9) else '')"
-    $candidatos = @()
-    if (Get-Command py -ErrorAction SilentlyContinue) { $candidatos += , @("py", "-3") }
-    Get-Command python -All -ErrorAction SilentlyContinue | ForEach-Object { $candidatos += , @($_.Source) }
-    Get-ChildItem "$env:LOCALAPPDATA\Programs\Python\Python3*\python.exe" -ErrorAction SilentlyContinue |
-        ForEach-Object { $candidatos += , @($_.FullName) }
-
-    foreach ($candidato in $candidatos) {
-        try {
-            $exe = $candidato[0]
-            $argumentos = @($candidato | Select-Object -Skip 1) + @("-c", $teste)
-            # Sem "| Select-Object -First 1": ele interrompe o programa e o código de saída vira -1
-            $saida = @(& $exe @argumentos 2>$null)
-            $caminho = if ($saida.Count -gt 0) { "$($saida[0])".Trim() } else { "" }
-            if ($LASTEXITCODE -eq 0 -and $caminho -and (Test-Path $caminho)) { return $caminho }
-        } catch { }
-    }
-    return $null
 }
 
 try {
     # Enxerga programas instalados depois que esta janela (ou o Explorer) foi aberta
     Atualizar-Path
 
-    # 1. Python
-    $python = Encontrar-Python
-    if (-not $python) {
-        Instalar-Com-Winget "Python.Python.3.13" "Python"
-        $python = Encontrar-Python
-        if (-not $python) { throw "O Python foi instalado, mas não consegui encontrá-lo. Feche esta janela e abra o iniciar.bat de novo." }
-    }
-    $pythonw = Join-Path (Split-Path $python) "pythonw.exe"
-
-    # 2. FFmpeg (junta vídeo e áudio, gera MP3 e converte HEIC)
-    if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
-        Instalar-Com-Winget "Gyan.FFmpeg" "FFmpeg"
-        if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
-            throw "O FFmpeg foi instalado, mas não consegui encontrá-lo. Feche esta janela e abra o iniciar.bat de novo."
-        }
-    }
-
-    # 3. Deno (o yt-dlp usa para ler o YouTube). Opcional: se falhar, segue sem ele.
+    # 1. uv (Python + bibliotecas), FFmpeg e Deno
+    Garantir-Programa "uv" "astral-sh.uv" "uv"
+    Garantir-Programa "ffmpeg" "Gyan.FFmpeg" "FFmpeg"
     if (-not (Get-Command deno -ErrorAction SilentlyContinue)) {
+        # Opcional: o yt-dlp usa para ler o YouTube; se falhar, segue sem ele
         try { Instalar-Com-Winget "DenoLand.Deno" "Deno" }
         catch { Escrever "[AVISO] Não consegui instalar o Deno. O programa funciona, mas alguns vídeos podem falhar." Yellow }
     }
 
-    # 4. Bibliotecas do Python (Flask, yt-dlp...)
-    & $python -c "import flask, flask_cors, yt_dlp" 2>$null
-    if ($LASTEXITCODE -ne 0) {
-        Escrever "Instalando as bibliotecas do Python..." Cyan
-        & $python -m pip install -q --disable-pip-version-check -r requirements.txt | Out-Host
-        if ($LASTEXITCODE -ne 0) { throw "Não consegui instalar as bibliotecas do Python (veja as mensagens acima)." }
+    # 2. Python e bibliotecas (o uv só faz algo se estiver faltando ou mudou)
+    $pythonw = Join-Path $env:UV_PROJECT_ENVIRONMENT "Scripts\pythonw.exe"
+    if (-not (Test-Path $pythonw)) {
+        Escrever "Preparando o Python e as bibliotecas (só na primeira vez)..." Cyan
         $instalouAlgo = $true
     }
+    uv sync --no-dev --quiet
+    if ($LASTEXITCODE -ne 0) {
+        uv sync --no-dev  # de novo, mostrando os detalhes do erro
+        throw "Não consegui preparar o Python e as bibliotecas (veja as mensagens acima)."
+    }
 
-    # 5. Atualiza o yt-dlp no máximo uma vez por dia (o YouTube muda com frequência)
+    # 3. Atualiza o yt-dlp no máximo uma vez por dia (o YouTube muda com frequência)
     $marca = Join-Path $env:TEMP "baixar_youtube_ytdlp_atualizado.txt"
     $hoje = (Get-Date).ToString("yyyy-MM-dd")
     if (-not (Test-Path $marca) -or (Get-Content $marca -ErrorAction SilentlyContinue) -ne $hoje) {
         Escrever "Atualizando o yt-dlp..." Cyan
-        & $python -m pip install -q --disable-pip-version-check -U yt-dlp | Out-Host
+        uv sync --no-dev --quiet --upgrade-package yt-dlp
         if ($LASTEXITCODE -eq 0) { Set-Content $marca $hoje }
     }
 
-    # 6. Atalho "Baixar YouTube" na Área de Trabalho (criado uma vez só)
+    # 4. Atalho "Baixar YouTube" na Área de Trabalho (criado uma vez só)
     try { Criar-Atalho } catch { Escrever "[AVISO] Não consegui criar o atalho na Área de Trabalho: $($_.Exception.Message)" Yellow }
 
-    # 7. Abre o programa sem janela; ele mesmo abre o painel no navegador
-    if ($instalouAlgo) { Escrever "`nTudo pronto! Abrindo o painel no navegador..." Green }
+    # 5. Abre o programa (sem janela preta); ele abre a própria janela do painel
+    if ($instalouAlgo) { Escrever "`nTudo pronto! Abrindo o Baixar YouTube..." Green }
     Start-Process -FilePath $pythonw -ArgumentList "app.py" -WorkingDirectory $Projeto -ErrorAction Stop
     if ($instalouAlgo) { Start-Sleep -Seconds 3 }
 }

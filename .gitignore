@@ -10,3 +10,5 @@ BaixarYouTube/
 *.log
 atualizacoes/
 .atalho_criado
+.ambiente/
+uv.lock

@@ -3,22 +3,24 @@ from flask_cors import CORS
 from werkzeug.wsgi import ClosingIterator
 import os
 import re
+import shutil
 import socket
 import subprocess
 import sys
 import threading
 import time
+import urllib.request
 import uuid
 import webbrowser
 from urllib.parse import urlparse, parse_qs
 
 # Importando as ferramentas da pasta servicos/
-from servicos.caminhos import PASTA_DOWNLOADS, PASTA_PAINEL
+from servicos.caminhos import PASTA_DESTINO, PASTA_DOWNLOADS, PASTA_PAINEL
 from servicos import atualizador
 atualizador.usar_versao_atualizada()  # Precisa vir antes de qualquer import do yt-dlp
 from servicos.downloader import (
     STATUS_FINAIS, adicionar_fila, arquivos_salvos, cancelar_download,
-    status_download, titulos_download,
+    caminho_sem_sobrescrever, nome_de_arquivo_seguro, status_download, titulos_download,
 )
 from servicos.conversor import converter_heic_para_jpg
 from servicos.informacoes import obter_informacoes
@@ -235,6 +237,16 @@ def converter_heic_api():
 
     if caminho_jpg and os.path.exists(caminho_jpg):
         nome_download = arquivo.filename.rsplit('.', 1)[0] + ".jpg"
+
+        # O painel pede ?salvar=1: o JPG vai direto para a pasta Downloads (igual aos vídeos)
+        if request.args.get('salvar') == '1':
+            destino = caminho_sem_sobrescrever(PASTA_DESTINO, nome_de_arquivo_seguro(nome_download[:-4]), "jpg")
+            shutil.move(caminho_jpg, destino)
+            if os.path.exists(caminho_heic):
+                os.remove(caminho_heic)
+            arquivos_salvos[id_conversao] = destino  # permite usar /api/mostrar/<id>
+            return jsonify({"id": id_conversao, "arquivo": os.path.basename(destino)})
+
         resposta = send_file(caminho_jpg, as_attachment=True, download_name=nome_download)
 
         def limpar_arquivos():
@@ -256,13 +268,17 @@ def converter_heic_api():
 
 
 # ==========================================
-# INICIALIZAÇÃO (python app.py, iniciar.bat ou BaixarYouTube.exe)
+# INICIALIZAÇÃO (iniciar.bat, atalho, BaixarYouTube.exe ou "uv run app.py")
 # ==========================================
 
 PORTA = int(os.environ.get("PORTA", 5000))
-ENDERECO_PAINEL = f"http://localhost:{PORTA}"
+ENDERECO_PAINEL = f"http://127.0.0.1:{PORTA}"
 
-# Sem a janela preta, o programa fecha sozinho quando ninguém está com o painel
+# Janela própria do programa (pywebview). Fica None quando o painel abre no
+# navegador, o que acontece só se a janela não puder ser criada neste PC.
+janela = None
+
+# Modo navegador: o programa fecha sozinho quando ninguém está com o painel
 # aberto há esse tempo e não há downloads em andamento
 FECHAR_SEM_PAINEL_SEGUNDOS = 3 * 60
 ultimo_sinal_do_painel = time.time()
@@ -277,13 +293,12 @@ def ja_esta_rodando():
         return s.connect_ex(("127.0.0.1", PORTA)) == 0
 
 
-def abrir_navegador_quando_pronto():
-    """Fica checando a porta e abre o navegador no instante em que o servidor sobe."""
-    for _ in range(100):  # desiste depois de ~10 segundos
+def esperar_servidor(limite_segundos=10):
+    for _ in range(limite_segundos * 20):
         if ja_esta_rodando():
-            webbrowser.open(ENDERECO_PAINEL)
-            return
-        time.sleep(0.1)
+            return True
+        time.sleep(0.05)
+    return False
 
 
 def encerrar_programa():
@@ -291,9 +306,19 @@ def encerrar_programa():
     os._exit(0)
 
 
+def ha_downloads_em_andamento():
+    return any(st not in STATUS_FINAIS for st in list(status_download.values()))
+
+
+@app.route('/api/modo', methods=['GET'])
+def modo_api():
+    # O painel esconde o botão "Encerrar" quando está na janela própria
+    return jsonify({"janela": janela is not None})
+
+
 @app.route('/api/ping', methods=['POST'])
 def ping_api():
-    # O painel avisa a cada 30 segundos que continua aberto
+    # No modo navegador, o painel avisa a cada 30 segundos que continua aberto
     global ultimo_sinal_do_painel
     ultimo_sinal_do_painel = time.time()
     return jsonify({"ok": True})
@@ -306,31 +331,140 @@ def encerrar_api():
     return jsonify({"mensagem": "Programa encerrado."})
 
 
+@app.route('/api/focar', methods=['POST'])
+def focar_api():
+    # Clicou no atalho com o programa já aberto: traz a janela para a frente
+    if janela is not None:
+        janela.restore()
+        janela.show()
+        janela.on_top = True   # liga e desliga o "sempre no topo" para a
+        janela.on_top = False  # janela passar na frente das outras
+    else:
+        webbrowser.open(ENDERECO_PAINEL)
+    return jsonify({"ok": True})
+
+
 def fechar_quando_ninguem_usar():
     while True:
         time.sleep(30)
-        baixando = any(st not in STATUS_FINAIS for st in list(status_download.values()))
-        if not baixando and time.time() - ultimo_sinal_do_painel > FECHAR_SEM_PAINEL_SEGUNDOS:
+        if not ha_downloads_em_andamento() and time.time() - ultimo_sinal_do_painel > FECHAR_SEM_PAINEL_SEGUNDOS:
             encerrar_programa()
 
 
+def iniciar_servidor():
+    from waitress import serve
+    # Waitress: servidor robusto (o do Flask é só para desenvolvimento).
+    # threads=16: atende o painel enquanto os downloads acontecem
+    serve(app, host="127.0.0.1", port=PORTA, threads=16)
+
+
+def colocar_icone_na_janela(titulo, caminho_icone):
+    """Troca o ícone da janela (barra de título e barra de tarefas).
+
+    Usa mensagens do Windows enviadas com PostMessage, que não esperam resposta.
+    Não mexe na janela pelo .NET a partir de outra thread: isso pode travar a
+    janela ("Não respondendo"), porque só a thread dona da janela pode alterá-la.
+    """
+    if sys.platform != "win32":
+        return
+    import ctypes
+    from ctypes import wintypes
+
+    user32 = ctypes.windll.user32
+    meu_pid = os.getpid()
+    encontrada = []
+
+    # Procura a janela com esse título que pertence a este processo
+    @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    def verificar(hwnd, _):
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        if pid.value == meu_pid:
+            texto = ctypes.create_unicode_buffer(256)
+            user32.GetWindowTextW(hwnd, texto, 256)
+            if texto.value == titulo:
+                encontrada.append(hwnd)
+                return False
+        return True
+
+    user32.EnumWindows(verificar, 0)
+    if not encontrada:
+        return
+
+    IMAGE_ICON, LR_LOADFROMFILE, WM_SETICON = 1, 0x10, 0x80
+    # Tipos declarados: no Windows 64 bits, os identificadores não cabem num int comum
+    user32.LoadImageW.argtypes = [wintypes.HINSTANCE, wintypes.LPCWSTR, wintypes.UINT, ctypes.c_int, ctypes.c_int, wintypes.UINT]
+    user32.LoadImageW.restype = wintypes.HANDLE
+    user32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+    for tipo, metrica in ((1, 11), (0, 49)):  # ícone grande (SM_CXICON) e pequeno (SM_CXSMICON)
+        tamanho = user32.GetSystemMetrics(metrica)
+        icone = user32.LoadImageW(None, caminho_icone, IMAGE_ICON, tamanho, tamanho, LR_LOADFROMFILE)
+        if icone:
+            user32.PostMessageW(encontrada[0], WM_SETICON, tipo, icone)
+
+
+def abrir_janela():
+    """Abre o painel numa janela própria. Bloqueia até a janela ser fechada."""
+    global janela
+    import webview
+
+    if sys.platform == "win32":
+        import ctypes
+        # Faz a barra de tarefas tratar o programa como um aplicativo próprio (e não como "Python")
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("BaixarYouTube.Painel")
+
+    janela = webview.create_window(
+        "Baixar YouTube", ENDERECO_PAINEL,
+        width=760, height=900, min_size=(440, 620), background_color="#050608",
+    )
+
+    def ao_mostrar():
+        # Coloca a logo do programa na janela e na barra de tarefas
+        try:
+            colocar_icone_na_janela("Baixar YouTube", os.path.join(PASTA_PAINEL, "icone.ico"))
+        except Exception as e:
+            print(f"[JANELA] Não foi possível colocar o ícone: {e}")
+
+    def ao_fechar():
+        # Avisa antes de fechar se ainda há download acontecendo
+        if ha_downloads_em_andamento():
+            return janela.create_confirmation_dialog(
+                "Fechar o Baixar YouTube?",
+                "Ainda há downloads em andamento. Se fechar agora, eles serão interrompidos.",
+            )
+        return True
+
+    janela.events.shown += ao_mostrar
+    janela.events.closing += ao_fechar
+    webview.start(gui="edgechromium")
+
+
 if __name__ == "__main__":
-    # Clicou de novo com o programa já aberto: só abre o navegador
+    # Clicou de novo com o programa já aberto: só traz a janela para a frente
     if ja_esta_rodando():
-        print(f"O programa já está aberto. Abrindo {ENDERECO_PAINEL} ...")
-        webbrowser.open(ENDERECO_PAINEL)
+        try:
+            urllib.request.urlopen(urllib.request.Request(f"{ENDERECO_PAINEL}/api/focar", method="POST"), timeout=3)
+        except Exception:
+            webbrowser.open(ENDERECO_PAINEL)
         sys.exit(0)
 
     print("==========================================")
     print("          Baixar YouTube")
     print("==========================================")
-    print(f"Painel: {ENDERECO_PAINEL}")
-    print("Para fechar: botão \"Encerrar\" no painel (ou feche o painel e espere 3 minutos).\n")
 
-    # Abre o painel no navegador assim que o servidor estiver pronto
-    threading.Thread(target=abrir_navegador_quando_pronto, daemon=True).start()
-    threading.Thread(target=fechar_quando_ninguem_usar, daemon=True).start()
+    servidor = threading.Thread(target=iniciar_servidor, daemon=True)
+    servidor.start()
+    esperar_servidor()
     atualizador.verificar_atualizacao()  # Só faz algo dentro do .exe, uma vez por dia
 
-    # Sem debug: o modo debug reinicia o processo e não funciona dentro do .exe
-    app.run(host="127.0.0.1", port=PORTA, debug=False)
+    try:
+        abrir_janela()
+        encerrar_programa()  # a janela foi fechada
+    except Exception as e:
+        # Sem a janela (ex.: WebView2 ausente), usa o navegador como antes
+        janela = None
+        print(f"[JANELA] Não foi possível abrir a janela própria ({e}); usando o navegador.")
+        print(f"Painel: {ENDERECO_PAINEL}")
+        webbrowser.open(ENDERECO_PAINEL)
+        threading.Thread(target=fechar_quando_ninguem_usar, daemon=True).start()
+        servidor.join()

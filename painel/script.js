@@ -400,22 +400,20 @@ async function converterHeic(arquivo) {
     const formulario = new FormData();
     formulario.append("arquivo", arquivo);
 
-    const resposta = await fetch("/api/converter/heic", { method: "POST", body: formulario });
+    // ?salvar=1: o JPG vai direto para a pasta Downloads, igual aos vídeos
+    const resposta = await fetch("/api/converter/heic?salvar=1", { method: "POST", body: formulario });
+    const dados = await resposta.json();
 
     if (!resposta.ok) {
-        statusHeic.textContent = (await resposta.json()).erro;
+        statusHeic.textContent = dados.erro;
         return;
     }
 
-    // Recebe o JPG e dispara o download no navegador
-    const blob = await resposta.blob();
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = arquivo.name.replace(/\.[^.]+$/, "") + ".jpg";
-    link.click();
-    URL.revokeObjectURL(link.href);
-
-    statusHeic.textContent = `✓ ${link.download} convertido`;
+    statusHeic.innerHTML = `<span></span> <button type="button" class="item-botao">📂 Mostrar na pasta</button>`;
+    statusHeic.querySelector("span").textContent = `✓ ${dados.arquivo} salvo em Downloads`;
+    statusHeic.querySelector("button").addEventListener("click", () => {
+        fetch(`/api/mostrar/${dados.id}`, { method: "POST" }).catch(() => {});
+    });
     campoArquivo.value = "";
 }
 
@@ -423,13 +421,24 @@ async function converterHeic(arquivo) {
 // PROGRAMA: manter aberto / encerrar
 // ==========================================
 
-// Avisa o programa que o painel continua aberto. Sem esse aviso por 3 minutos
-// (e sem downloads em andamento), o programa fecha sozinho.
+// Na janela própria do programa, fechar a janela já encerra tudo: o botão
+// "Encerrar" some. No navegador, o painel avisa a cada 30 segundos que continua
+// aberto; sem esse aviso por 3 minutos (e sem downloads), o programa fecha sozinho.
 function avisarQuePainelEstaAberto() {
     fetch("/api/ping", { method: "POST" }).catch(() => {});
 }
-avisarQuePainelEstaAberto();
-setInterval(avisarQuePainelEstaAberto, 30000);
+
+fetch("/api/modo")
+    .then((r) => r.json())
+    .then((modo) => {
+        if (modo.janela) {
+            document.getElementById("encerrar").hidden = true;
+        } else {
+            avisarQuePainelEstaAberto();
+            setInterval(avisarQuePainelEstaAberto, 30000);
+        }
+    })
+    .catch(() => {});
 
 document.getElementById("encerrar").addEventListener("click", async () => {
     if (!confirm("Encerrar o programa? Downloads em andamento serão interrompidos.")) return;
@@ -439,7 +448,7 @@ document.getElementById("encerrar").addEventListener("click", async () => {
         <div class="brilho"></div>
         <div class="encerrado">
             <h1>Programa encerrado</h1>
-            <p>Pode fechar esta aba. Para usar de novo, abra o BaixarYouTube.exe.</p>
+            <p>Pode fechar esta aba. Para usar de novo, abra o atalho Baixar YouTube.</p>
         </div>
     `;
 });

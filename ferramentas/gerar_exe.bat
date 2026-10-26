@@ -9,15 +9,22 @@ set "TEMPORARIOS=%PROJETO%\ferramentas\compilacao"
 set "PROGRAMA=%PROJETO%\BaixarYouTube"
 set "ATALHO=%PROJETO%\Baixar YouTube.lnk"
 
-echo Instalando dependências e o PyInstaller...
-python -m pip install -q --disable-pip-version-check -r requirements.txt pyinstaller
+rem O uv prepara o Python e as bibliotecas (o mesmo ambiente do iniciar.bat)
+set "UV_PROJECT_ENVIRONMENT=%PROJETO%\.ambiente"
+set "UV_PYTHON_PREFERENCE=system"
+where uv >nul 2>nul || (
+    echo [ERRO] uv não encontrado. Rode o iniciar.bat uma vez antes ^(ele instala o uv^).
+    pause
+    exit /b 1
+)
+echo Preparando o Python e as bibliotecas...
+uv sync --no-dev --quiet
 
 rem Apaga a versão antiga para não confundir com uma geração que falhou
 if exist "%PROGRAMA%\BaixarYouTube.exe" del "%PROGRAMA%\BaixarYouTube.exe" 2>nul
 if exist "%PROGRAMA%\BaixarYouTube.exe" (
     echo.
-    echo [ERRO] O programa está aberto. Feche-o pelo botão "Encerrar programa"
-    echo        no painel e rode este arquivo de novo.
+    echo [ERRO] O programa está aberto. Feche a janela dele e rode este arquivo de novo.
     pause
     exit /b 1
 )
@@ -26,9 +33,10 @@ echo.
 echo Gerando o programa (pode levar alguns minutos)...
 rem --onedir: o programa fica numa pasta já descompactada e abre bem mais rápido
 rem           que o modo arquivo único (--onefile)
-rem --noconsole: abre só o navegador, sem a janela preta
+rem --noconsole: abre só a janela do programa, sem a janela preta
 rem Arquivos temporários (.spec e build) ficam em ferramentas\compilacao
-python -m PyInstaller --noconfirm --onedir --noconsole --name BaixarYouTube ^
+rem "uv run --with pyinstaller": usa o PyInstaller só durante a geração
+uv run --no-dev --with pyinstaller python -m PyInstaller --noconfirm --onedir --noconsole --name BaixarYouTube ^
     --specpath "%TEMPORARIOS%" ^
     --workpath "%TEMPORARIOS%" ^
     --distpath "%PROJETO%" ^
@@ -45,7 +53,7 @@ if not exist "%PROGRAMA%\BaixarYouTube.exe" (
 )
 
 rem Atalho na pasta principal: é só dar dois cliques nele
-powershell -NoProfile -Command "$a = (New-Object -ComObject WScript.Shell).CreateShortcut('%ATALHO%'); $a.TargetPath = '%PROGRAMA%\BaixarYouTube.exe'; $a.WorkingDirectory = '%PROGRAMA%'; $a.Description = 'Abre o painel do Baixar YouTube'; $a.Save()"
+powershell -NoProfile -Command "$a = (New-Object -ComObject WScript.Shell).CreateShortcut('%ATALHO%'); $a.TargetPath = '%PROGRAMA%\BaixarYouTube.exe'; $a.WorkingDirectory = '%PROGRAMA%'; $a.Description = 'Abre o Baixar YouTube'; $a.Save()"
 
 echo Pronto! Programa gerado na pasta BaixarYouTube\
 echo Para abrir, dê dois cliques no atalho "Baixar YouTube" na pasta principal.
