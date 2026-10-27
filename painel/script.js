@@ -381,7 +381,10 @@ function criarItem(id, descricao, tituloDaPrevia) {
 const areaArquivo = document.getElementById("area-arquivo");
 const campoArquivo = document.getElementById("arquivo-heic");
 const textoArquivo = document.getElementById("texto-arquivo");
-const statusHeic = document.getElementById("status-heic");
+const listaConversao = document.getElementById("lista-conversao");
+const resumoConversao = document.getElementById("resumo-conversao");
+let filaConversao = Promise.resolve();
+const totalConversao = { enviadas: 0, convertidas: 0 };
 
 // Mesmas regras do servicos/conversor.py: JPG só a partir de HEIC (PNG transparente ficaria com fundo preto)
 const ENTRADAS_POR_FORMATO = {
@@ -396,13 +399,13 @@ document.querySelectorAll("#formatos-foto .chip").forEach((chip) => {
         chip.classList.add("ativo");
         formatoFoto = chip.dataset.formato;
         campoArquivo.accept = ENTRADAS_POR_FORMATO[formatoFoto].aceita;
-        textoArquivo.innerHTML = `Clique ou arraste uma foto ${ENTRADAS_POR_FORMATO[formatoFoto].texto} aqui`;
-        statusHeic.textContent = "";
+        textoArquivo.innerHTML = `Clique ou arraste uma ou várias fotos ${ENTRADAS_POR_FORMATO[formatoFoto].texto}`;
     });
 });
 
 campoArquivo.addEventListener("change", () => {
-    if (campoArquivo.files[0]) converterHeic(campoArquivo.files[0]);
+    converterFotos([...campoArquivo.files]);
+    campoArquivo.value = ""; // permite escolher as mesmas fotos de novo
 });
 
 // Arrastar e soltar
@@ -414,31 +417,207 @@ areaArquivo.addEventListener("dragleave", () => areaArquivo.classList.remove("ar
 areaArquivo.addEventListener("drop", (e) => {
     e.preventDefault();
     areaArquivo.classList.remove("arrastando");
-    if (e.dataTransfer.files[0]) converterHeic(e.dataTransfer.files[0]);
+    converterFotos([...e.dataTransfer.files]);
 });
 
-async function converterHeic(arquivo) {
-    statusHeic.textContent = "Convertendo...";
+function converterFotos(arquivos) {
+    // Uma de cada vez, na ordem em que chegaram; o lote novo entra no topo da lista.
+    // Cada foto guarda o formato escolhido na hora em que foi enviada.
+    const lote = document.createDocumentFragment();
+    arquivos.forEach((arquivo) => {
+        const item = criarItemFoto(arquivo.name);
+        lote.appendChild(item);
+        const formato = formatoFoto;
+        filaConversao = filaConversao.then(() => converterUma(arquivo, formato, item));
+    });
+    listaConversao.prepend(lote);
+}
+
+async function converterUma(arquivo, formato, item) {
+    const status = item.querySelector(".item-status");
+    const acoes = item.querySelector(".item-acoes");
+    status.textContent = "Convertendo...";
+    item.classList.add("trabalhando");
 
     const formulario = new FormData();
     formulario.append("arquivo", arquivo);
-    formulario.append("formato", formatoFoto);
+    formulario.append("formato", formato);
 
-    // ?salvar=1: a foto vai direto para a pasta Downloads, igual aos vídeos
-    const resposta = await fetch("/api/converter/imagem?salvar=1", { method: "POST", body: formulario });
-    const dados = await resposta.json();
+    let dados = {};
+    let resposta = null;
+    try {
+        // ?salvar=1: a foto vai direto para a pasta Downloads, igual aos vídeos
+        resposta = await fetch("/api/converter/imagem?salvar=1", { method: "POST", body: formulario });
+        dados = await resposta.json();
+    } catch {
+        dados = { erro: "Não foi possível falar com o programa." };
+    }
+    item.classList.remove("trabalhando");
+    totalConversao.enviadas++;
 
-    if (!resposta.ok) {
-        statusHeic.textContent = dados.erro;
+    if (!resposta || !resposta.ok) {
+        item.classList.add("erro");
+        status.textContent = "Erro";
+        acoes.textContent = dados.erro || "Não foi possível converter.";
+    } else {
+        totalConversao.convertidas++;
+        item.classList.add("pronto");
+        status.textContent = formato === "webp" ? "✓ WebP" : "✓ JPG";
+        item.querySelector(".barra-preenchida").style.width = "100%";
+        mostrarSalvo(acoes, dados);
+    }
+
+    const { enviadas, convertidas } = totalConversao;
+    resumoConversao.textContent = convertidas === enviadas
+        ? `${convertidas} ${convertidas === 1 ? "foto convertida" : "fotos convertidas"} · salvas em Downloads`
+        : `${convertidas} de ${enviadas} fotos convertidas · salvas em Downloads`;
+}
+
+// "nome.jpg" + botão "Mostrar na pasta" (converter e comprimir)
+function mostrarSalvo(acoes, dados, detalhes = dados.arquivo) {
+    acoes.innerHTML = `<span></span> <button type="button" class="item-botao">📂 Mostrar na pasta</button>`;
+    acoes.querySelector("span").textContent = detalhes;
+    acoes.querySelector("span").title = dados.arquivo;
+    acoes.querySelector("button").addEventListener("click", () => {
+        fetch(`/api/mostrar/${dados.id}`, { method: "POST" }).catch(() => {});
+    });
+}
+
+// ==========================================
+// FERRAMENTA 3: COMPRIMIR FOTO (uma ou várias de uma vez)
+// ==========================================
+const areaCompressao = document.getElementById("area-compressao");
+const campoCompressao = document.getElementById("arquivos-compressao");
+const listaCompressao = document.getElementById("lista-compressao");
+const resumoCompressao = document.getElementById("resumo-compressao");
+const dicaCompressao = document.getElementById("dica-compressao");
+const DICAS_NIVEL = {
+    alta: "Diferença praticamente nula, mesmo com zoom. Economiza menos.",
+    equilibrado: "Menor arquivo sem diferença visível. Recomendado.",
+    forte: "Arquivo bem menor; de perto, pode perder um pouco de detalhe.",
+};
+let nivelCompressao = "equilibrado";
+let tamanhoCompressao = "original";
+let filaCompressao = Promise.resolve();
+const totalCompressao = { fotos: 0, antes: 0, depois: 0 };
+
+function escolherChip(seletor, aoEscolher) {
+    document.querySelectorAll(`${seletor} .chip`).forEach((chip) => {
+        chip.addEventListener("click", () => {
+            document.querySelectorAll(`${seletor} .chip`).forEach((c) => c.classList.remove("ativo"));
+            chip.classList.add("ativo");
+            aoEscolher(chip.dataset);
+        });
+    });
+}
+escolherChip("#niveis-compressao", (d) => {
+    nivelCompressao = d.nivel;
+    dicaCompressao.textContent = DICAS_NIVEL[nivelCompressao];
+});
+escolherChip("#tamanhos-compressao", (d) => (tamanhoCompressao = d.tamanho));
+dicaCompressao.textContent = DICAS_NIVEL[nivelCompressao];
+
+campoCompressao.addEventListener("change", () => {
+    comprimirFotos([...campoCompressao.files]);
+    campoCompressao.value = "";
+});
+areaCompressao.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    areaCompressao.classList.add("arrastando");
+});
+areaCompressao.addEventListener("dragleave", () => areaCompressao.classList.remove("arrastando"));
+areaCompressao.addEventListener("drop", (e) => {
+    e.preventDefault();
+    areaCompressao.classList.remove("arrastando");
+    comprimirFotos([...e.dataTransfer.files]);
+});
+
+function comprimirFotos(arquivos) {
+    // Uma de cada vez (cada foto já testa várias qualidades), na ordem em que chegaram.
+    // O lote novo entra no topo da lista, mantendo essa ordem.
+    const lote = document.createDocumentFragment();
+    arquivos.forEach((arquivo) => {
+        const item = criarItemFoto(arquivo.name);
+        lote.appendChild(item);
+        const nivel = nivelCompressao;
+        const tamanho = tamanhoCompressao;
+        filaCompressao = filaCompressao.then(() => comprimirUma(arquivo, nivel, tamanho, item));
+    });
+    listaCompressao.prepend(lote);
+}
+
+// Uma linha da lista de fotos (converter e comprimir)
+function criarItemFoto(nome) {
+    const item = document.createElement("li");
+    item.className = "item";
+    item.innerHTML = `
+        <div class="item-topo">
+            <span class="item-titulo"></span>
+            <span class="item-status">Na fila...</span>
+        </div>
+        <div class="barra barra-economia"><div class="barra-preenchida"></div></div>
+        <div class="item-acoes"></div>
+    `;
+    item.querySelector(".item-titulo").textContent = nome; // textContent: o nome pode ter qualquer caractere
+    return item;
+}
+
+async function comprimirUma(arquivo, nivel, tamanho, item) {
+    const status = item.querySelector(".item-status");
+    const barra = item.querySelector(".barra-preenchida");
+    const acoes = item.querySelector(".item-acoes");
+    status.textContent = "Comprimindo...";
+    item.classList.add("trabalhando");
+
+    const formulario = new FormData();
+    formulario.append("arquivo", arquivo);
+    formulario.append("nivel", nivel);
+    formulario.append("tamanho", tamanho);
+
+    let dados = {};
+    let resposta = null;
+    try {
+        resposta = await fetch("/api/comprimir?salvar=1", { method: "POST", body: formulario });
+        dados = await resposta.json();
+    } catch {
+        dados = { erro: "Não foi possível falar com o programa." };
+    }
+    item.classList.remove("trabalhando");
+
+    if (!resposta || !resposta.ok) {
+        item.classList.add("erro");
+        status.textContent = "Erro";
+        acoes.textContent = dados.erro || "Não foi possível comprimir.";
         return;
     }
 
-    statusHeic.innerHTML = `<span></span> <button type="button" class="item-botao">📂 Mostrar na pasta</button>`;
-    statusHeic.querySelector("span").textContent = `✓ ${dados.arquivo} salvo em Downloads`;
-    statusHeic.querySelector("button").addEventListener("click", () => {
-        fetch(`/api/mostrar/${dados.id}`, { method: "POST" }).catch(() => {});
-    });
-    campoArquivo.value = "";
+    totalCompressao.fotos++;
+    totalCompressao.antes += dados.antes;
+    totalCompressao.depois += dados.depois;
+    atualizarResumoCompressao();
+
+    if (dados.ja_otimizada) {
+        status.textContent = "Já estava otimizada";
+        item.classList.add("otimizada");
+        barra.style.width = "100%";
+        acoes.textContent = `${formatarTamanho(dados.antes)} · não deu para diminuir sem perder qualidade; nada foi salvo.`;
+        return;
+    }
+
+    // A barra mostra o tamanho novo em relação ao original
+    const economia = Math.round((1 - dados.depois / dados.antes) * 100);
+    item.classList.add("pronto");
+    status.textContent = `−${economia}%`;
+    barra.style.width = `${Math.max(2, 100 - economia)}%`;
+    mostrarSalvo(acoes, dados,
+        `${formatarTamanho(dados.antes)} → ${formatarTamanho(dados.depois)} · ${dados.largura}×${dados.altura}`);
+}
+
+function atualizarResumoCompressao() {
+    const { fotos, antes, depois } = totalCompressao;
+    const economia = antes ? Math.round((1 - depois / antes) * 100) : 0;
+    resumoCompressao.textContent = `${fotos} ${fotos === 1 ? "foto" : "fotos"} · `
+        + `economizou ${formatarTamanho(antes - depois)} (−${economia}%) · salvas em Downloads`;
 }
 
 // ==========================================

@@ -1,5 +1,6 @@
 """O que é comum aos sites suportados (YouTube, TikTok e Instagram)."""
 import os
+from urllib.parse import parse_qs, urlparse
 
 from servicos.caminhos import PASTA_BASE
 
@@ -9,6 +10,28 @@ from servicos.caminhos import PASTA_BASE
 ARQUIVO_COOKIES = os.path.join(PASTA_BASE, "cookies.txt")
 
 NOMES_DOS_SITES = {"Youtube": "YouTube", "YoutubeTab": "YouTube", "TikTok": "TikTok", "Instagram": "Instagram"}
+
+
+def e_playlist_sem_video(url):
+    """True quando o link é de uma playlist inteira (ex.: youtube.com/playlist?list=...).
+    Um vídeo aberto dentro de uma playlist (watch?v=...&list=...) é aceito:
+    o downloader baixa só aquele vídeo."""
+    try:
+        partes = urlparse(str(url).strip())
+    except ValueError:
+        return False
+
+    parametros = parse_qs(partes.query)
+    if "list" not in parametros:
+        return False
+
+    host = (partes.hostname or "").lower()
+    tem_video = (
+        "v" in parametros
+        or (host.endswith("youtu.be") and len(partes.path) > 1)
+        or partes.path.startswith(("/shorts/", "/live/", "/embed/"))
+    )
+    return not tem_video
 
 
 def opcoes_de_login():

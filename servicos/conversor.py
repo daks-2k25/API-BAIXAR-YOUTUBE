@@ -52,7 +52,7 @@ def converter_imagem(caminho_entrada, formato="jpg", caminho_saida=None):
 
         print(f"Sucesso! Imagem salva em: {caminho_saida}")
 
-        # Retorna o caminho para que o app.py consiga devolver ao usuário
+        # Retorna o caminho para que a rota (rotas/fotos.py) consiga devolver ao usuário
         return caminho_saida
 
     except FileNotFoundError:

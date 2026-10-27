@@ -35,6 +35,7 @@ No primeiro clique ele também cria o atalho **Baixar YouTube**, com a logo, na 
 - **Cortar um trecho**: baixa só o pedaço escolhido (ex.: de 1:20 a 2:05), cortado no segundo exato
 - **Cancelar** downloads na fila ou em andamento
 - **Conversão de fotos**: HEIC para JPG, e HEIC, JPG ou PNG para WebP (bem menor, mantém a transparência do PNG), salvo direto em Downloads
+- **Compressor de fotos**: JPG, PNG, WebP e HEIC, uma ou várias de uma vez. Testa algumas qualidades em cada foto e fica com o menor arquivo que continua visualmente igual (medido pelo SSIM), em três níveis. Nunca deixa o arquivo maior, corrige a orientação das fotos de celular, remove a localização (GPS) e pode reduzir o tamanho (2560, 1920 ou 1280 px)
 - **Meus downloads**: lista do que o programa já salvou (vídeos, músicas e fotos), com filtros, **Abrir** e **Mostrar na pasta**, mesmo depois de fechar e abrir o programa
 - **Executável para Windows**, que não precisa de Python instalado e mantém o yt-dlp atualizado sozinho
 
@@ -43,7 +44,8 @@ No primeiro clique ele também cria o atalho **Baixar YouTube**, com a logo, na 
 - **Baixar:** cole o link do YouTube, TikTok ou Instagram e confira a prévia do vídeo (no YouTube, clique na miniatura para assistir ali mesmo). Escolha MP4 ou MP3 e a resolução, e clique em **Baixar agora**. O arquivo é salvo na sua pasta **Downloads**; o botão **Mostrar na pasta** abre o Explorador com ele selecionado.
 - **Cortar trecho:** clique em **✂ Cortar trecho** e preencha o início e o fim (ex.: `1:20` e `2:05`). Deixe o fim vazio para ir até o final do vídeo.
 - **Cancelar:** cada download tem um botão **✕ Cancelar** enquanto está na fila ou baixando.
-- **Converter foto:** escolha **JPG** (a partir de HEIC) ou **WebP** (a partir de HEIC, JPG ou PNG), depois arraste a foto ou clique para escolher. A foto convertida é salva na pasta Downloads.
+- **Converter foto:** escolha **JPG** (a partir de HEIC) ou **WebP** (a partir de HEIC, JPG ou PNG), depois arraste uma ou várias fotos (ou clique para escolher). Elas são convertidas uma de cada vez, cada uma aparece na lista com o resultado, e as convertidas vão para a pasta Downloads. Se uma foto não for aceita (ex.: PNG para JPG), só ela mostra o erro e as outras continuam.
+- **Comprimir foto:** escolha o nível (**Alta qualidade**, **Equilibrado** ou **Máxima compressão**) e, se quiser, um tamanho máximo, e arraste uma ou várias fotos. Cada foto aparece com o tamanho antes e depois, e a versão comprimida vai para Downloads com "(comprimida)" no nome. JPG, PNG e WebP continuam no mesmo formato; HEIC vira JPG. Se a foto já estiver bem comprimida, nada é salvo.
 - **Meus downloads:** mostra tudo o que o programa salvou, do mais novo para o mais antigo, com data e tamanho. Filtre por **Vídeos**, **Músicas** ou **Fotos**, e use **Abrir** (abre no player ou visualizador do Windows) ou **Mostrar na pasta**. **Remover da lista** e **Limpar lista** só tiram da lista: os arquivos continuam na pasta Downloads. Se um arquivo foi apagado ou movido, ele aparece riscado.
 - **Atualizar:** quando sair uma versão nova, aparece uma notificação no canto da janela, um aviso no topo e uma bolinha no sino 🔔. Clique em **Atualizar agora**: o programa baixa a versão nova, reinicia sozinho e continua com seus arquivos e configurações. Com o programa aberto, ele confere se saiu versão nova a cada 30 minutos. A versão instalada aparece no rodapé.
 - **Depois:** se preferir atualizar mais tarde, clique em **Depois**. A notificação não volta para essa versão (o sino continua com a bolinha, e a atualização fica disponível nele). Se sair uma versão ainda mais nova, o programa avisa de novo.
@@ -86,15 +88,26 @@ Na próxima vez que alguém abrir o programa, o aviso de atualização aparece.
 ```
 API-BAIXAR-YOUTUBE/
 ├── iniciar.bat          # Dois cliques: prepara tudo e abre o programa
-├── app.py               # API (Flask + Waitress), janela própria e inicialização
+├── app.py               # Início do programa: liga o servidor e abre a janela ou o navegador
 ├── versao.json          # Versão do programa e novidades (usado na atualização)
 ├── pyproject.toml       # Bibliotecas do Python (usado pelo uv)
 ├── painel/              # Painel (index.html, style.css, script.js)
 │                        # + logo.webp, favicon.svg e icone.ico (ícone do programa)
-├── servicos/
+├── rotas/               # Endereços da API (/api/...), um arquivo por área
+│   ├── __init__.py      # Cria o app Flask e registra todas as rotas
+│   ├── videos.py        # Baixar, prévia, qualidades, progresso e cancelar
+│   ├── fotos.py         # Converter e comprimir fotos
+│   ├── arquivos.py      # Mostrar na pasta, abrir e "Meus downloads"
+│   ├── programa.py      # Janela ou navegador, preferências, encerrar
+│   ├── atualizacao.py   # Versão nova e "Atualizar agora"
+│   └── utilidades.py    # O que as rotas compartilham (arquivos enviados, salvar em Downloads)
+├── servicos/            # O que o programa faz (as rotas só chamam estes arquivos)
+│   ├── programa.py      # Porta, uma instância só, reiniciar, encerrar e estado da janela
+│   ├── janela.py        # Janela própria (pywebview) e ícone na barra de tarefas
 │   ├── caminhos.py      # Pastas do projeto e pasta Downloads do usuário
 │   ├── preferencias.py  # Preferências salvas (.preferencias.json): modo de abertura, atualização adiada
 │   ├── historico.py     # Aba "Meus downloads": o que o programa salvou (.historico.json)
+│   ├── compressor.py    # Aba "Comprimir foto": menor arquivo sem perda visível (FFmpeg + SSIM)
 │   ├── autoatualizacao.py # Botão "Atualizar agora": baixa e instala a versão nova
 │   ├── atualizador.py   # Mantém o yt-dlp atualizado dentro do executável
 │   ├── downloader.py    # Fila de downloads, corte de trecho e cancelamento (yt-dlp)
@@ -258,6 +271,23 @@ O endereço antigo `POST /api/converter/heic` continua funcionando (sem `formato
 |--------|--------|
 | `400`  | Nenhum arquivo enviado, formato inválido ou tipo de foto não aceito para esse formato |
 | `500`  | Falha na conversão (o arquivo não é uma foto válida) |
+
+### `POST /api/comprimir`
+
+Comprime uma foto (JPG, PNG, WebP ou HEIC). Envie como `multipart/form-data`:
+
+| Campo | Valores |
+|-------|---------|
+| `arquivo` | a foto |
+| `nivel` | `alta`, `equilibrado` (padrão) ou `forte` |
+| `tamanho` | maior lado da foto: `original` (padrão), `2560`, `1920` ou `1280` |
+
+A resposta é a foto comprimida. Com `?salvar=1` (usado pelo painel), ela vai para a pasta Downloads e a resposta é um JSON com `arquivo`, `antes` e `depois` (bytes), `largura` e `altura`. Se não der para diminuir sem perder qualidade, a resposta é um JSON com `"ja_otimizada": true` e nada é salvo.
+
+```bash
+curl -X POST http://127.0.0.1:5000/api/comprimir \
+  -F "arquivo=@foto.jpg" -F "nivel=equilibrado" -F "tamanho=1920" -OJ
+```
 
 ### `GET /api/historico`
 

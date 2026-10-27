@@ -226,6 +226,11 @@ def adicionar_fila(url, formato, qualidade, id_download, trecho=None):
     })
 
 
+def downloads_em_andamento():
+    """True se algum download ainda está na fila ou acontecendo."""
+    return any(st not in STATUS_FINAIS for st in list(status_download.values()))
+
+
 def cancelar_download(id_download):
     """Pede para cancelar. Devolve False se o download não existe ou já terminou."""
     status = status_download.get(id_download)

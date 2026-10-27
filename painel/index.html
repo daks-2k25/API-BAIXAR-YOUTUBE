@@ -63,7 +63,7 @@
         <span class="etiqueta">Baixar YouTube · Converter Foto</span>
         <h1>Seus vídeos e músicas, <span>salvos em segundos.</span></h1>
         <p class="subtitulo">
-          Vídeos do YouTube, TikTok e Instagram em MP4 ou MP3, e fotos em JPG ou WebP, direto na sua pasta Downloads.
+          Vídeos do YouTube, TikTok e Instagram em MP4 ou MP3, e fotos convertidas ou comprimidas, direto na sua pasta Downloads.
         </p>
       </header>
 
@@ -84,6 +84,7 @@
       <nav class="abas">
         <button class="aba ativa" data-aba="youtube">Vídeos</button>
         <button class="aba" data-aba="heic">Converter foto</button>
+        <button class="aba" data-aba="comprimir">Comprimir foto</button>
         <button class="aba" data-aba="meus-downloads">Meus downloads</button>
       </nav>
 
@@ -173,11 +174,43 @@
           <button type="button" class="chip" data-formato="webp">WebP</button>
         </div>
         <label class="area-arquivo" id="area-arquivo">
-          <input id="arquivo-heic" type="file" accept=".heic,.heif" hidden />
+          <input id="arquivo-heic" type="file" accept=".heic,.heif" multiple hidden />
           <span class="icone">⬆</span>
-          <span id="texto-arquivo">Clique ou arraste uma foto <b>.heic</b> aqui</span>
+          <span id="texto-arquivo">Clique ou arraste uma ou várias fotos <b>.heic</b></span>
         </label>
-        <p id="status-heic" class="status"></p>
+        <p id="resumo-conversao" class="resumo-compressao"></p>
+        <ul id="lista-conversao" class="lista-fotos"></ul>
+      </section>
+
+      <!-- Ferramenta 3: Comprimir foto (uma ou várias de uma vez) -->
+      <section id="comprimir" class="card escondido">
+        <div class="opcoes-compressao">
+          <div>
+            <p class="rotulo-opcao">Nível</p>
+            <div class="grupo" id="niveis-compressao">
+              <button type="button" class="chip" data-nivel="alta">Alta qualidade</button>
+              <button type="button" class="chip ativo" data-nivel="equilibrado">Equilibrado</button>
+              <button type="button" class="chip" data-nivel="forte">Máxima compressão</button>
+            </div>
+          </div>
+          <div>
+            <p class="rotulo-opcao">Tamanho máximo</p>
+            <div class="grupo" id="tamanhos-compressao">
+              <button type="button" class="chip ativo" data-tamanho="original">Original</button>
+              <button type="button" class="chip" data-tamanho="2560">2560 px</button>
+              <button type="button" class="chip" data-tamanho="1920">1920 px</button>
+              <button type="button" class="chip" data-tamanho="1280">1280 px</button>
+            </div>
+          </div>
+          <p id="dica-compressao" class="dica-compressao"></p>
+        </div>
+        <label class="area-arquivo" id="area-compressao">
+          <input id="arquivos-compressao" type="file" accept=".jpg,.jpeg,.png,.webp,.heic,.heif" multiple hidden />
+          <span class="icone">⬇</span>
+          <span>Clique ou arraste uma ou várias fotos <b>.jpg</b>, <b>.png</b>, <b>.webp</b> ou <b>.heic</b></span>
+        </label>
+        <p id="resumo-compressao" class="resumo-compressao"></p>
+        <ul id="lista-compressao" class="lista-fotos"></ul>
       </section>
 
       <!-- Meus downloads: histórico do que o programa salvou (preenchido pelo script.js) -->

@@ -378,7 +378,8 @@ h1 span {
 /* Abas como links sublinhados */
 .abas {
     display: flex;
-    gap: 22px;
+    flex-wrap: wrap;
+    gap: 6px 22px;
     margin-bottom: 18px;
 }
 
@@ -899,6 +900,67 @@ input[type="url"]:focus {
     text-align: center;
     font-size: 14px;
     color: var(--texto-suave);
+}
+
+/* ==========================================
+   Comprimir foto
+   ========================================== */
+.opcoes-compressao {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.rotulo-opcao {
+    margin-bottom: 8px;
+    color: var(--texto-suave);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.dica-compressao {
+    color: var(--texto-suave);
+    font-size: 13px;
+}
+
+.resumo-compressao {
+    margin-top: 16px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.resumo-compressao:empty {
+    display: none;
+}
+
+/* Listas de fotos (converter e comprimir): uma linha por foto */
+.lista-fotos {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.lista-fotos:empty {
+    display: none;
+}
+
+/* Enquanto converte ou comprime, a barra fica pulsando */
+.item.trabalhando .barra-preenchida {
+    width: 100% !important;
+    animation: pulsar 1.2s ease-in-out infinite;
+}
+
+.item.pronto .item-status {
+    font-weight: 600;
+}
+
+.item.otimizada .barra-preenchida {
+    background: var(--borda-forte);
 }
 
 /* ==========================================
