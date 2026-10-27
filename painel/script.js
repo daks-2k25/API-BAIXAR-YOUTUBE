@@ -210,7 +210,7 @@ async function baixarPlaylist() {
             body: JSON.stringify(pedido),
         }).catch(() => null);
         const resultado = resposta ? await resposta.json().catch(() => ({})) : {};
-        const item = criarItem(resultado.id, descricao, video.titulo, { pasta, inserir: false });
+        const item = criarItem(resultado.id, descricao, video.titulo, { inserir: false });
         if (!resposta || !resposta.ok) marcarErro(item, resultado.erro || "Não foi possível colocar na fila.");
         lote.appendChild(item);
     }
@@ -637,9 +637,8 @@ function marcarErro(item, mensagem) {
 }
 
 // Cria um item na lista e acompanha o progresso dele.
-// pasta: subpasta da playlist (só para o texto "Salvo em"); inserir: false
-// quando quem chama coloca o item na lista (lote de uma playlist).
-function criarItem(id, descricao, tituloDaPrevia, { pasta = null, inserir = true } = {}) {
+// inserir: false quando quem chama coloca o item na lista (lote de uma playlist).
+function criarItem(id, descricao, tituloDaPrevia, { inserir = true } = {}) {
     const item = document.createElement("li");
     item.className = "item";
     item.innerHTML = `
@@ -685,7 +684,8 @@ function criarItem(id, descricao, tituloDaPrevia, { pasta = null, inserir = true
             // O arquivo já foi salvo na pasta Downloads (ou na pasta da playlist)
             acoes.innerHTML = `<span></span>
                 <button type="button" class="item-botao">📂 Mostrar na pasta</button>`;
-            acoes.querySelector("span").textContent = pasta ? `✓ Salvo em Downloads › ${pasta}` : "✓ Salvo em Downloads";
+            // Pasta escolhida em Configurações (ou a da playlist)
+            acoes.querySelector("span").textContent = `✓ Salvo em ${dados.pasta || "Downloads"}`;
             acoes.querySelector("span").title = dados.arquivo;
             acoes.querySelector("button").addEventListener("click", () => {
                 fetch(`/api/mostrar/${id}`, { method: "POST" })
@@ -801,16 +801,18 @@ async function converterUma(arquivo, formato, item) {
         status.textContent = formato === "webp" ? "✓ WebP" : "✓ JPG";
         item.querySelector(".barra-preenchida").style.width = "100%";
         mostrarSalvo(acoes, dados);
+        totalConversao.pasta = dados.pasta;
     }
 
     const { enviadas, convertidas } = totalConversao;
+    const ondeFicaram = `salvas em ${totalConversao.pasta || "Downloads"}`;
     resumoConversao.textContent = convertidas === enviadas
-        ? `${convertidas} ${convertidas === 1 ? "foto convertida" : "fotos convertidas"} · salvas em Downloads`
-        : `${convertidas} de ${enviadas} fotos convertidas · salvas em Downloads`;
+        ? `${convertidas} ${convertidas === 1 ? "foto convertida" : "fotos convertidas"} · ${ondeFicaram}`
+        : `${convertidas} de ${enviadas} fotos convertidas · ${ondeFicaram}`;
 }
 
-// "nome.jpg" + botão "Mostrar na pasta" (converter e comprimir)
-function mostrarSalvo(acoes, dados, detalhes = dados.arquivo) {
+// "nome.jpg em Downloads" + botão "Mostrar na pasta" (converter e comprimir)
+function mostrarSalvo(acoes, dados, detalhes = `${dados.arquivo} em ${dados.pasta || "Downloads"}`) {
     acoes.innerHTML = `<span></span> <button type="button" class="item-botao">📂 Mostrar na pasta</button>`;
     acoes.querySelector("span").textContent = detalhes;
     acoes.querySelector("span").title = dados.arquivo;
@@ -930,6 +932,7 @@ async function comprimirUma(arquivo, nivel, tamanho, item) {
     totalCompressao.fotos++;
     totalCompressao.antes += dados.antes;
     totalCompressao.depois += dados.depois;
+    if (dados.pasta) totalCompressao.pasta = dados.pasta;
     atualizarResumoCompressao();
 
     if (dados.ja_otimizada) {
@@ -953,7 +956,7 @@ function atualizarResumoCompressao() {
     const { fotos, antes, depois } = totalCompressao;
     const economia = antes ? Math.round((1 - depois / antes) * 100) : 0;
     resumoCompressao.textContent = `${fotos} ${fotos === 1 ? "foto" : "fotos"} · `
-        + `economizou ${formatarTamanho(antes - depois)} (−${economia}%) · salvas em Downloads`;
+        + `economizou ${formatarTamanho(antes - depois)} (−${economia}%) · salvas em ${totalCompressao.pasta || "Downloads"}`;
 }
 
 // ==========================================
@@ -1118,6 +1121,123 @@ botaoConfig.addEventListener("click", (evento) => {
     sino.classList.remove("aberto");
     dicaConfig.textContent = "";
 });
+
+// ==========================================
+// CONFIGURAÇÕES: onde salvar os arquivos
+// ==========================================
+const listaPastas = document.getElementById("config-pastas");
+const dicaPastas = document.getElementById("config-pastas-dica");
+const PASTAS_POR_MODO = {
+    uma: [["tudo", "Todos os arquivos"]],
+    separadas: [["video", "Vídeos (MP4)"], ["musica", "Músicas (MP3)"], ["foto", "Fotos"]],
+};
+let pastas = null; // resposta de /api/pastas
+
+// "C:\Users\Fulano\Videos\Puxaí\Clipes" -> "…\Videos\Puxaí\Clipes" (o caminho inteiro aparece ao parar o mouse)
+function caminhoCurto(caminho) {
+    const partes = caminho.split(/[\\/]/).filter(Boolean);
+    return partes.length > 3 ? `…\\${partes.slice(-3).join("\\")}` : caminho;
+}
+
+async function salvarPastas(mudancas) {
+    const resposta = await fetch("/api/pastas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(mudancas),
+    }).catch(() => null);
+    const dados = resposta ? await resposta.json().catch(() => ({})) : {};
+    if (!resposta || !resposta.ok) {
+        dicaPastas.textContent = dados.erro || "Não foi possível salvar. Tente de novo.";
+        return false;
+    }
+    pastas = dados;
+    return true;
+}
+
+// Monta as linhas (uma ou três) só quando o modo muda; depois, só atualiza os textos.
+// (Recriar o botão clicado fecharia o painel: o clique "sairia" de dentro dele.)
+function montarPastas() {
+    document.querySelectorAll("#config-pastas-modo .chip").forEach((chip) => {
+        chip.classList.toggle("ativo", chip.dataset.modoPasta === pastas.modo);
+    });
+    if (listaPastas.dataset.modo !== pastas.modo) {
+        listaPastas.dataset.modo = pastas.modo;
+        listaPastas.replaceChildren(...PASTAS_POR_MODO[pastas.modo].map(([tipo, rotulo]) => {
+            const linha = document.createElement("div");
+            linha.className = "pasta-linha";
+            linha.dataset.tipo = tipo;
+            linha.innerHTML = `
+                <span class="pasta-rotulo"></span>
+                <span class="pasta-caminho"></span>
+                <span class="pasta-botoes">
+                    <button type="button" class="item-botao pasta-escolher">Escolher…</button>
+                    <button type="button" class="botao-texto pasta-padrao">Usar Downloads</button>
+                </span>
+            `;
+            linha.querySelector(".pasta-rotulo").textContent = rotulo;
+            linha.querySelector(".pasta-escolher").addEventListener("click", () => escolherPasta(tipo, rotulo, linha));
+            linha.querySelector(".pasta-padrao").addEventListener("click", async () => {
+                if (await salvarPastas({ [tipo]: "" })) {
+                    montarPastas();
+                    dicaPastas.textContent = `✓ ${rotulo}: de volta para Downloads.`;
+                }
+            });
+            return linha;
+        }));
+    }
+    listaPastas.querySelectorAll(".pasta-linha").forEach((linha) => {
+        const caminho = pastas[linha.dataset.tipo];
+        const texto = linha.querySelector(".pasta-caminho");
+        texto.textContent = caminhoCurto(caminho);
+        texto.title = caminho;
+        linha.querySelector(".pasta-padrao").hidden = caminho === pastas.padrao;
+    });
+}
+
+async function escolherPasta(tipo, rotulo, linha) {
+    const botao = linha.querySelector(".pasta-escolher");
+    botao.disabled = true;
+    botao.textContent = "Escolha na janela…";
+    dicaPastas.textContent = "";
+    try {
+        const resposta = await fetch("/api/pastas/escolher", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ atual: pastas[tipo] }),
+        });
+        const dados = await resposta.json();
+        if (!resposta.ok) {
+            dicaPastas.textContent = dados.erro;
+        } else if (dados.pasta && (await salvarPastas({ [tipo]: dados.pasta }))) {
+            montarPastas();
+            dicaPastas.textContent = `✓ ${rotulo} vão para ${dados.pasta}`;
+        }
+    } catch {
+        dicaPastas.textContent = "Não foi possível abrir a janela de escolher pasta.";
+    } finally {
+        botao.disabled = false;
+        botao.textContent = "Escolher…";
+    }
+}
+
+document.querySelectorAll("#config-pastas-modo .chip").forEach((chip) => {
+    chip.addEventListener("click", async () => {
+        if (await salvarPastas({ modo: chip.dataset.modoPasta })) {
+            montarPastas();
+            dicaPastas.textContent = pastas.modo === "uma"
+                ? "✓ Tudo vai para a mesma pasta."
+                : "✓ Escolha uma pasta para cada tipo de arquivo.";
+        }
+    });
+});
+
+fetch("/api/pastas")
+    .then((r) => r.json())
+    .then((dados) => {
+        pastas = dados;
+        montarPastas();
+    })
+    .catch(() => {});
 
 // Escolher como o programa abre (vale a partir da próxima vez)
 document.querySelectorAll("#config-modo .chip").forEach((chip) => {

@@ -4,7 +4,7 @@ import webbrowser
 
 from flask import Blueprint, jsonify, request
 
-from servicos import preferencias, programa
+from servicos import destinos, preferencias, programa
 from servicos.janela import trazer_para_frente
 
 rotas = Blueprint("programa", __name__)
@@ -56,6 +56,32 @@ def salvar_preferencias_api():
         return jsonify({"erro": "Use 'janela' ou 'navegador'."}), 400
     preferencias.salvar("modo_abertura", modo)
     return jsonify({"modo_abertura": modo})
+
+
+@rotas.route('/api/pastas', methods=['GET'])
+def pastas_api():
+    # Onde os arquivos prontos são salvos (Configurações > Salvar arquivos em)
+    return jsonify(destinos.configuracao())
+
+
+@rotas.route('/api/pastas', methods=['POST'])
+def salvar_pastas_api():
+    # {"modo": "uma"|"separadas", "tudo"|"video"|"musica"|"foto": caminho ("" = Downloads)}
+    try:
+        return jsonify(destinos.salvar(request.get_json(silent=True) or {}))
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
+
+
+@rotas.route('/api/pastas/escolher', methods=['POST'])
+def escolher_pasta_api():
+    # Abre a janela do Windows para escolher uma pasta (só devolve o caminho; quem salva é o POST /api/pastas)
+    atual = (request.get_json(silent=True) or {}).get("atual")
+    try:
+        return jsonify({"pasta": destinos.escolher_pasta(atual)})
+    except Exception as e:
+        print(f"[PASTAS] Não foi possível abrir a janela de escolher pasta: {e}")
+        return jsonify({"erro": "Não foi possível abrir a janela de escolher pasta."}), 500
 
 
 @rotas.route('/api/abrir-no-navegador', methods=['POST'])

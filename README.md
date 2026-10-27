@@ -33,7 +33,7 @@ No primeiro clique ele também cria o atalho **Puxaí**, com a logo, na **Área 
 - **Playlists e canais**: cole o link e aparece a lista de vídeos (até 200) com caixinhas para marcar quais baixar. Os arquivos podem ir para uma pasta com o nome da playlist, numerados na ordem (`01 - Título`), bom para álbuns. Se o link for de um vídeo aberto dentro de uma playlist, o painel pergunta: **Usar só este vídeo** ou **Baixar a playlist**
 - **Vários links de uma vez**: cole uma lista de links (até 200) e todos entram na fila, na ordem
 - **Cancelar todos**: com 2 ou mais downloads em andamento, um botão cancela todos de uma vez
-- **Salva direto na pasta Downloads**, com o **título do vídeo** no nome (sem sobrescrever arquivos que já existem)
+- **Salva direto na pasta Downloads** (ou na pasta que você escolher: uma para tudo ou uma para vídeos, outra para músicas e outra para fotos), com o **título do vídeo** no nome (sem sobrescrever arquivos que já existem)
 - **Cortar um trecho**: baixa só o pedaço escolhido (ex.: de 1:20 a 2:05), cortado no segundo exato
 - **Cancelar** downloads na fila ou em andamento
 - **Conversão de fotos**: HEIC para JPG, e HEIC, JPG ou PNG para WebP (bem menor, mantém a transparência do PNG), salvo direto em Downloads
@@ -54,6 +54,7 @@ No primeiro clique ele também cria o atalho **Puxaí**, com a logo, na **Área 
 - **Depois:** se preferir atualizar mais tarde, clique em **Depois**. A notificação não volta para essa versão (o sino continua com a bolinha, e a atualização fica disponível nele). Se sair uma versão ainda mais nova, o programa avisa de novo.
 - **Sino 🔔:** mostra a atualização disponível ou confirma que você está na versão mais recente, com o botão **Verificar agora**.
 - **Para fechar:** feche a janela. Se ainda houver download em andamento, o programa pergunta antes.
+- **Onde salvar:** em **⚙ Configurações**, em **Salvar os arquivos em**, escolha **Uma pasta para tudo** ou **Pastas separadas** (Vídeos, Músicas e Fotos). Clique em **Escolher…** para abrir a janela do Windows e escolher a pasta; **Usar Downloads** volta para a pasta Downloads. Se a pasta escolhida não estiver disponível (ex.: HD externo desconectado), o arquivo vai para Downloads.
 - **Janela ou navegador:** em **⚙ Configurações** (ao lado do sino), escolha se o programa abre na **Janela do aplicativo** ou no **Navegador**. A escolha fica salva para as próximas vezes. Para trocar na hora:
   - Na janela, o botão **↗** (ou **Abrir no navegador agora**, nas Configurações) abre o painel no navegador e fecha a janela; o programa continua rodando.
   - No navegador, **Reabrir como aplicativo** (nas Configurações) reinicia o programa na janela.
@@ -109,7 +110,8 @@ API-BAIXAR-YOUTUBE/
 │   ├── programa.py      # Porta, uma instância só, reiniciar, encerrar e estado da janela
 │   ├── janela.py        # Janela própria (pywebview) e ícone na barra de tarefas
 │   ├── caminhos.py      # Pastas do projeto e pasta Downloads do usuário
-│   ├── preferencias.py  # Preferências salvas (.preferencias.json): modo de abertura, atualização adiada
+│   ├── preferencias.py  # Preferências salvas (.preferencias.json): modo de abertura, pastas, atualização adiada
+│   ├── destinos.py      # Onde salvar os arquivos (uma pasta ou separadas) e a janela de escolher pasta
 │   ├── historico.py     # Aba "Meus downloads": o que o programa salvou (.historico.json)
 │   ├── compressor.py    # Aba "Comprimir foto": menor arquivo sem perda visível (FFmpeg + SSIM)
 │   ├── autoatualizacao.py # Botão "Atualizar agora": baixa e instala a versão nova
@@ -359,6 +361,19 @@ Baixa e instala a versão nova e reinicia o programa. Responde `409` se houver d
 ### `GET /api/preferencias` e `POST /api/preferencias`
 
 Lê ou salva como o programa abre: `{"modo_abertura": "janela"}` ou `{"modo_abertura": "navegador"}`. Vale a partir da próxima vez que o programa abrir.
+
+### `GET /api/pastas` e `POST /api/pastas`
+
+Lê ou salva onde os arquivos prontos são salvos. `modo` é `uma` (uma pasta para tudo, em `tudo`) ou `separadas` (`video`, `musica` e `foto`). Uma pasta vazia (`""`) volta para Downloads; uma pasta que não existe responde `400`.
+
+```json
+{ "modo": "separadas", "tudo": "C:\\Users\\Fulano\\Downloads", "video": "D:\\Videos",
+  "musica": "D:\\Musicas", "foto": "C:\\Users\\Fulano\\Downloads", "padrao": "C:\\Users\\Fulano\\Downloads" }
+```
+
+### `POST /api/pastas/escolher`
+
+Abre a janela do Windows para escolher uma pasta e devolve `{"pasta": "D:\\Videos"}` (ou `{"pasta": null}` se a pessoa cancelar). Só escolhe: para salvar, envie a pasta em `POST /api/pastas`. Corpo opcional: `{"atual": "<pasta onde a janela abre>"}`.
 
 ### `POST /api/abrir-no-navegador` e `POST /api/reabrir-como-aplicativo`
 

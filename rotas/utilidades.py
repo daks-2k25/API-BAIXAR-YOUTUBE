@@ -4,8 +4,8 @@ import shutil
 
 from werkzeug.wsgi import ClosingIterator
 
-from servicos import historico
-from servicos.caminhos import PASTA_DESTINO, PASTA_DOWNLOADS
+from servicos import destinos, historico
+from servicos.caminhos import PASTA_DOWNLOADS
 from servicos.downloader import arquivos_salvos, caminho_sem_sobrescrever, nome_de_arquivo_seguro
 
 
@@ -39,14 +39,20 @@ def apagar(*caminhos):
             os.remove(caminho)
 
 
-def salvar_em_downloads(caminho, nome, formato, id_arquivo):
-    """Move o arquivo pronto para a pasta Downloads (sem sobrescrever outro) e
-    o registra para "Mostrar na pasta" e "Meus downloads". Devolve o destino."""
-    destino = caminho_sem_sobrescrever(PASTA_DESTINO, nome_de_arquivo_seguro(nome), formato)
+def salvar_no_destino(caminho, nome, formato, id_arquivo):
+    """Move a foto pronta para a pasta de fotos escolhida em Configurações
+    (Downloads, se nenhuma), sem sobrescrever outro arquivo, e a registra para
+    "Mostrar na pasta" e "Meus downloads". Devolve o destino."""
+    destino = caminho_sem_sobrescrever(destinos.pasta_para("foto"), nome_de_arquivo_seguro(nome), formato)
     shutil.move(caminho, destino)
     arquivos_salvos[id_arquivo] = destino
     historico.registrar(id_arquivo, destino, nome)
     return destino
+
+
+def pasta_do_arquivo(caminho):
+    """Nome da pasta onde o arquivo ficou, para o painel ("✓ Salvo em Músicas")."""
+    return os.path.basename(os.path.dirname(caminho)) if caminho else None
 
 
 def caminho_do_arquivo(id_arquivo):

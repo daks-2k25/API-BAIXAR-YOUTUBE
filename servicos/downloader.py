@@ -10,8 +10,8 @@ import yt_dlp
 from yt_dlp.postprocessor import PostProcessor
 from yt_dlp.utils import DownloadCancelled, download_range_func
 
-from servicos import historico
-from servicos.caminhos import PASTA_DESTINO, PASTA_DOWNLOADS
+from servicos import destinos, historico
+from servicos.caminhos import PASTA_DOWNLOADS
 from servicos.sites import mensagem_de_erro, opcoes_de_login, titulo_amigavel
 
 # Quantos downloads rodam ao mesmo tempo (os outros esperam na fila)
@@ -244,14 +244,16 @@ def processar(tarefa):
 
                     # Playlist: pasta com o nome dela e o número na frente ("03 - Título"),
                     # para os arquivos ficarem na ordem da playlist
-                    pasta = PASTA_DESTINO
+                    # Pasta escolhida em Configurações (Downloads, se nenhuma)
+                    base = destinos.pasta_para("musica" if extensao == "mp3" else "video")
+                    pasta = base
                     if tarefa.get("pasta"):
-                        pasta = os.path.join(PASTA_DESTINO, tarefa["pasta"])
+                        pasta = os.path.join(base, tarefa["pasta"])
                         os.makedirs(pasta, exist_ok=True)
                     if tarefa.get("numero"):
                         nome = f"{tarefa['numero']} - {nome}"
 
-                    # Move para a pasta Downloads do usuário, com o título no nome
+                    # Move para a pasta de destino, com o título no nome
                     destino = caminho_sem_sobrescrever(pasta, nome, extensao)
                     shutil.move(caminho_temporario, destino)
 

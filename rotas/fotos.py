@@ -10,7 +10,8 @@ import uuid
 from flask import Blueprint, jsonify, request, send_file
 
 from rotas.utilidades import (
-    ao_terminar_envio, apagar, extensao_do_arquivo, guardar_enviado, nome_sem_extensao, salvar_em_downloads,
+    ao_terminar_envio, apagar, extensao_do_arquivo, guardar_enviado, nome_sem_extensao, pasta_do_arquivo,
+    salvar_no_destino,
 )
 from servicos import compressor
 from servicos.caminhos import PASTA_DOWNLOADS
@@ -59,9 +60,9 @@ def converter_imagem_api():
     nome = nome_sem_extensao(arquivo.filename)
 
     if request.args.get('salvar') == '1':
-        destino = salvar_em_downloads(caminho_convertido, nome, formato, id_conversao)
+        destino = salvar_no_destino(caminho_convertido, nome, formato, id_conversao)
         apagar(caminho_original)
-        return jsonify({"id": id_conversao, "arquivo": os.path.basename(destino)})
+        return jsonify({"id": id_conversao, "arquivo": os.path.basename(destino), "pasta": pasta_do_arquivo(destino)})
 
     resposta = send_file(caminho_convertido, as_attachment=True, download_name=f"{nome}.{formato}")
     return ao_terminar_envio(resposta, lambda: apagar(caminho_original, caminho_convertido))
@@ -110,8 +111,9 @@ def comprimir_api():
     formato = resultado["formato"]
 
     if request.args.get('salvar') == '1':
-        destino = salvar_em_downloads(resultado["caminho"], f"{nome} (comprimida)", formato, id_compressao)
+        destino = salvar_no_destino(resultado["caminho"], f"{nome} (comprimida)", formato, id_compressao)
         dados["arquivo"] = os.path.basename(destino)
+        dados["pasta"] = pasta_do_arquivo(destino)
         return jsonify(dados)
 
     caminho = resultado["caminho"]

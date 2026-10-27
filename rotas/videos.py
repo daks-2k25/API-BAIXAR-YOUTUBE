@@ -9,6 +9,7 @@ from servicos.downloader import (
     adicionar_fila, arquivos_salvos, cancelar_download, erros_download, nome_de_arquivo_seguro,
     status_download, titulos_download,
 )
+from rotas.utilidades import pasta_do_arquivo
 from servicos.informacoes import obter_informacoes, obter_playlist
 from servicos.sites import e_playlist_sem_video, mensagem_de_erro
 
@@ -158,7 +159,8 @@ def progresso(id_download):
         "id": id_download,
         "status": status,
         "titulo": titulos_download.get(id_download),
-        "arquivo": os.path.basename(caminho) if caminho else None,  # nome do arquivo na pasta Downloads
+        "arquivo": os.path.basename(caminho) if caminho else None,  # nome do arquivo salvo
+        "pasta": pasta_do_arquivo(caminho),  # nome da pasta onde ficou ("Downloads", "Músicas"...)
         "erro": erros_download.get(id_download) if status == "Erro" else None,  # motivo da falha
     }
 
