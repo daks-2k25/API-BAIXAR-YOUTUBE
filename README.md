@@ -95,6 +95,7 @@ API-BAIXAR-YOUTUBE/
 │                        # + logo.webp, favicon.svg e icone.ico (ícone do programa)
 ├── rotas/               # Endereços da API (/api/...), um arquivo por área
 │   ├── __init__.py      # Cria o app Flask e registra todas as rotas
+│   ├── seguranca.py     # Só o painel pode usar a API (bloqueia pedidos de outros sites)
 │   ├── videos.py        # Baixar, prévia, qualidades, progresso e cancelar
 │   ├── fotos.py         # Converter e comprimir fotos
 │   ├── arquivos.py      # Mostrar na pasta, abrir e "Meus downloads"

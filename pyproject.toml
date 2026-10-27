@@ -6,7 +6,6 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "flask",
-    "flask-cors",
     "waitress",            # servidor web (mais robusto que o servidor de desenvolvimento do Flask)
     "pywebview",           # abre o painel numa janela própria, em vez do navegador
     "yt-dlp[default]",     # [default] inclui o yt-dlp-ejs, que o yt-dlp usa junto com o Deno

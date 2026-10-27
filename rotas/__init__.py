@@ -7,16 +7,16 @@
 - atualizacao.py  versão nova e botão "Atualizar agora"
 """
 from flask import Flask, send_from_directory
-from flask_cors import CORS
 
 from servicos.caminhos import PASTA_PAINEL
 from rotas import arquivos, atualizacao, fotos, programa, videos
+from rotas.seguranca import proteger
 
 
 def criar_app():
     # O painel web (pasta painel/) é servido pela própria API em http://localhost:5000
     app = Flask(__name__, static_folder=PASTA_PAINEL, static_url_path="")
-    CORS(app)
+    proteger(app)  # só o painel pode usar a API (veja rotas/seguranca.py)
 
     @app.route('/')
     def painel():
