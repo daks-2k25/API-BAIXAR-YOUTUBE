@@ -1,6 +1,6 @@
-# Baixar YouTube
+# Puxaí
 
-Aplicação em Python para baixar vídeos do **YouTube**, **TikTok** e **Instagram** em **MP4** ou extrair o áudio em **MP3**, além de converter fotos **HEIC** (iPhone) para **JPG** e fotos HEIC, JPG ou PNG para **WebP**. Abre numa **janela própria**, com uma **API REST** por trás, feita com Flask e [yt-dlp](https://github.com/yt-dlp/yt-dlp).
+Aplicação em Python para baixar vídeos do **YouTube**, **TikTok** e **Instagram** em **MP4** ou extrair o áudio em **MP3**, além de converter e comprimir fotos (**HEIC**, **JPG**, **PNG** e **WebP**). Abre numa **janela própria**, com uma **API REST** por trás, feita com Flask e [yt-dlp](https://github.com/yt-dlp/yt-dlp).
 
 ## Início rápido (Windows)
 
@@ -15,7 +15,7 @@ Pronto. **Na primeira vez**, ele instala sozinho o que estiver faltando no PC:
 
 O uv, o FFmpeg e o Deno vêm pelo winget, que já vem no Windows 10 e 11. Isso leva alguns minutos e mostra o andamento numa janela. **Nas próximas vezes**, ele vê que está tudo pronto e abre o programa em cerca de 2 segundos.
 
-No primeiro clique ele também cria o atalho **Baixar YouTube**, com a logo, na **Área de Trabalho**. Depois é só usar o atalho. Se você apagar o atalho, ele não é criado de novo; se mover a pasta do projeto, o atalho é corrigido no próximo uso do `iniciar.bat`. O yt-dlp é atualizado automaticamente uma vez por dia, porque o YouTube muda com frequência.
+No primeiro clique ele também cria o atalho **Puxaí**, com a logo, na **Área de Trabalho** (quem já tinha o atalho antigo, **Baixar YouTube**, tem ele renomeado sozinho). Depois é só usar o atalho. Se você apagar o atalho, ele não é criado de novo; se mover a pasta do projeto, o atalho é corrigido no próximo uso do `iniciar.bat`. O yt-dlp é atualizado automaticamente uma vez por dia, porque o YouTube muda com frequência.
 
 > Se o Windows mostrar "O Windows protegeu o computador" ao abrir o `iniciar.bat` baixado da internet, clique em **Mais informações → Executar assim mesmo**.
 
@@ -57,7 +57,7 @@ No primeiro clique ele também cria o atalho **Baixar YouTube**, com a logo, na 
   - No navegador, **Reabrir como aplicativo** (nas Configurações) reinicia o programa na janela.
   - No navegador, o programa fecha pelo botão **Encerrar programa** ou sozinho, 3 minutos depois de fechar todas as abas (se não houver downloads).
 
-Se clicar no atalho com o programa já aberto, ele só traz a janela para a frente (ou abre o painel no navegador, se estiver nesse modo). As mensagens do programa ficam no arquivo `BaixarYouTube.log`, útil se algo der errado. Se a janela própria não puder ser criada no PC (ex.: sem o componente WebView2 do Windows), o painel abre no navegador, como alternativa.
+Se clicar no atalho com o programa já aberto, ele só traz a janela para a frente (ou abre o painel no navegador, se estiver nesse modo). As mensagens do programa ficam no arquivo `Puxai.log`, útil se algo der errado. Se a janela própria não puder ser criada no PC (ex.: sem o componente WebView2 do Windows), o painel abre no navegador, como alternativa.
 
 ### Instagram: posts que pedem login
 
@@ -65,7 +65,7 @@ Reels e vídeos **públicos** do Instagram baixam sem login. Se algum post só a
 
 1. No Chrome, logado no Instagram, instale a extensão **Get cookies.txt LOCALLY**.
 2. Abra o instagram.com, clique na extensão e exporte os cookies.
-3. Salve o arquivo com o nome **`cookies.txt`** na pasta do programa (ao lado do `iniciar.bat`, ou dentro de `BaixarYouTube\` no programa gerado).
+3. Salve o arquivo com o nome **`cookies.txt`** na pasta do programa (ao lado do `iniciar.bat`, ou dentro de `Puxai\` no programa gerado).
 
 O programa passa a usar esse login automaticamente. O `cookies.txt` dá acesso à sua conta: não compartilhe esse arquivo. Ele não vai para o Git e o botão de atualizar não mexe nele.
 
@@ -75,7 +75,7 @@ O programa passa a usar esse login automaticamente. O `cookies.txt` dá acesso �
 
 - **Projeto baixado como ZIP:** o programa baixa o ZIP novo do GitHub e substitui os arquivos do projeto. A pasta `downloads`, o ambiente do Python (`.ambiente`), os logs e o atalho não são tocados. Arquivos que saíram do projeto na versão nova são apagados.
 - **Projeto clonado com git:** o programa roda `git pull`, mas só se a pasta estiver na branch `main` e sem alterações locais no código. Assim, quem está desenvolvendo não tem o trabalho sobrescrito.
-- **Programa gerado (`BaixarYouTube.exe`):** o aviso aparece, mas para atualizar é preciso gerar o programa de novo.
+- **Programa gerado (`Puxai.exe`):** o aviso aparece, mas para atualizar é preciso gerar o programa de novo.
 
 ## Publicando uma versão nova
 
@@ -123,19 +123,19 @@ API-BAIXAR-YOUTUBE/
 └── README.md
 ```
 
-Ao rodar, a aplicação cria a pasta `.ambiente/` (Python e bibliotecas, preparada pelo uv), a pasta `downloads/` (arquivos temporários enquanto baixa; os prontos vão para a pasta Downloads do Windows) e o `BaixarYouTube.log`. O `gerar_exe.bat` cria a pasta `BaixarYouTube/` e o atalho `Baixar YouTube.lnk`. Nada disso vai para o Git.
+Ao rodar, a aplicação cria a pasta `.ambiente/` (Python e bibliotecas, preparada pelo uv), a pasta `downloads/` (arquivos temporários enquanto baixa; os prontos vão para a pasta Downloads do Windows) e o `Puxai.log`. O `gerar_exe.bat` cria a pasta `Puxai/` e o atalho `Puxaí.lnk`. Nada disso vai para o Git.
 
 ## Gerar o executável (Windows)
 
 1. Rode o `iniciar.bat` pelo menos uma vez (ele instala o uv).
-2. Dê dois cliques em `ferramentas\gerar_exe.bat`. Ele gera o programa na pasta `BaixarYouTube\` e cria o atalho **Baixar YouTube** na pasta principal.
-3. Dê dois cliques no atalho **Baixar YouTube** da pasta principal.
+2. Dê dois cliques em `ferramentas\gerar_exe.bat`. Ele gera o programa na pasta `Puxai\` e cria o atalho **Puxaí** na pasta principal.
+3. Dê dois cliques no atalho **Puxaí** da pasta principal.
 
-O programa é gerado como pasta, e não como um `.exe` único, porque assim abre bem mais rápido. Para levar para outro PC, copie a pasta `BaixarYouTube\` inteira. Sempre que alterar o código, gere o executável de novo.
+O programa é gerado como pasta, e não como um `.exe` único, porque assim abre bem mais rápido. Para levar para outro PC, copie a pasta `Puxai\` inteira. Sempre que alterar o código, gere o executável de novo.
 
-O yt-dlp vai empacotado no programa, mas **se atualiza sozinho**: uma vez por dia o programa procura uma versão nova no PyPI, baixa (conferindo o SHA-256) e passa a usá-la na próxima abertura. As versões baixadas ficam em `BaixarYouTube\atualizacoes\`.
+O yt-dlp vai empacotado no programa, mas **se atualiza sozinho**: uma vez por dia o programa procura uma versão nova no PyPI, baixa (conferindo o SHA-256) e passa a usá-la na próxima abertura. As versões baixadas ficam em `Puxai\atualizacoes\`.
 
-O FFmpeg não vai dentro do executável: ele precisa estar instalado no PC, ou o `ffmpeg.exe` precisa ficar dentro da pasta `BaixarYouTube\`.
+O FFmpeg não vai dentro do executável: ele precisa estar instalado no PC, ou o `ffmpeg.exe` precisa ficar dentro da pasta `Puxai\`.
 
 ## Rodando em outros sistemas (Linux/macOS)
 
@@ -149,7 +149,7 @@ uv run app.py
 
 A aplicação roda em `http://127.0.0.1:5000`.
 
-**Segurança:** só o painel do programa pode usar a API pelo navegador. Pedidos vindos de outros sites (ou de outro programa local em outra porta, ou com um endereço que não seja `127.0.0.1`/`localhost`) recebem `403`, e a recusa fica registrada no `BaixarYouTube.log`. Programas fora do navegador, como `curl` e scripts, continuam podendo usar a API normalmente. Detalhes em `rotas/seguranca.py`.
+**Segurança:** só o painel do programa pode usar a API pelo navegador. Pedidos vindos de outros sites (ou de outro programa local em outra porta, ou com um endereço que não seja `127.0.0.1`/`localhost`) recebem `403`, e a recusa fica registrada no `Puxai.log`. Programas fora do navegador, como `curl` e scripts, continuam podendo usar a API normalmente. Detalhes em `rotas/seguranca.py`.
 
 ### `POST /api/download`
 

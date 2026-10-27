@@ -1,4 +1,4 @@
-"""Baixar YouTube: início do programa (iniciar.bat, atalho, BaixarYouTube.exe ou "uv run app.py").
+"""Puxaí: início do programa (iniciar.bat, atalho, Puxai.exe ou "uv run app.py").
 
 Liga o servidor do painel e abre a janela do aplicativo ou o navegador.
 O resto fica organizado em pastas:
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     # Reiniciando pelo painel: o programa antigo ainda pode estar fechando. Sem
     # esperar, ele seria confundido com "já está aberto" e o navegador abriria
     # uma aba que dá "conexão recusada" logo depois que ele fecha.
-    if os.environ.get("BAIXAR_YOUTUBE_MODO"):
+    if os.environ.get("PUXAI_MODO"):
         programa.esperar_porta_livre()
 
     # Clicou de novo com o programa já aberto: só traz a janela para a frente
@@ -59,7 +59,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     print("==========================================")
-    print("          Baixar YouTube")
+    print("                Puxaí")
     print("==========================================")
 
     servidor = threading.Thread(target=iniciar_servidor, daemon=True)
@@ -68,8 +68,8 @@ if __name__ == "__main__":
     atualizador.verificar_atualizacao()  # Só faz algo dentro do .exe, uma vez por dia
 
     # Janela do aplicativo ou navegador: escolhido em Configurações (⚙) no painel.
-    # BAIXAR_YOUTUBE_MODO força um modo uma vez (usado ao reabrir pelo painel).
-    modo = os.environ.pop("BAIXAR_YOUTUBE_MODO", "") or preferencias.modo_de_abertura()
+    # PUXAI_MODO força um modo uma vez (usado ao reabrir pelo painel).
+    modo = os.environ.pop("PUXAI_MODO", "") or preferencias.modo_de_abertura()
 
     if modo == "janela":
         try:

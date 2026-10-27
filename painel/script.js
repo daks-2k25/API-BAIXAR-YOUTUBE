@@ -1071,7 +1071,7 @@ async function reabrirComoAplicativo() {
             caiu = true;
         }
     }
-    mensagem.textContent = "O aplicativo não abriu. Abra pelo atalho Baixar YouTube na Área de Trabalho.";
+    mensagem.textContent = "O aplicativo não abriu. Abra pelo atalho Puxaí na Área de Trabalho.";
 }
 
 botaoAbrirNavegador.addEventListener("click", abrirNoNavegadorAgora);
@@ -1087,7 +1087,7 @@ document.getElementById("encerrar").addEventListener("click", async () => {
         <div class="brilho"></div>
         <div class="encerrado">
             <h1>Programa encerrado</h1>
-            <p>Pode fechar esta aba. Para usar de novo, abra o atalho Baixar YouTube.</p>
+            <p>Pode fechar esta aba. Para usar de novo, abra o atalho Puxaí.</p>
         </div>
     `;
 });

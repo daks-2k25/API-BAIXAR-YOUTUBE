@@ -49,10 +49,10 @@ PASTA_DESTINO = _pasta_downloads_do_usuario()
 
 os.makedirs(PASTA_DOWNLOADS, exist_ok=True)
 
-# Sem a janela preta (BaixarYouTube.exe ou pythonw), não existe onde mostrar as
-# mensagens. Elas vão para o arquivo BaixarYouTube.log, útil se algo der errado.
+# Sem a janela preta (Puxai.exe ou pythonw), não existe onde mostrar as
+# mensagens. Elas vão para o arquivo Puxai.log, útil se algo der errado.
 if sys.stdout is None or sys.stderr is None:
-    caminho_registro = os.path.join(PASTA_BASE, "BaixarYouTube.log")
+    caminho_registro = os.path.join(PASTA_BASE, "Puxai.log")
     # Continua o arquivo existente; recomeça do zero quando passa de 1 MB
     modo = "w" if os.path.exists(caminho_registro) and os.path.getsize(caminho_registro) > 1_000_000 else "a"
     registro = open(caminho_registro, modo, encoding="utf-8", buffering=1)

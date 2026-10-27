@@ -71,7 +71,7 @@ def reiniciar(modo):
     # "ping" para esperar: o "timeout" do Windows falha quando não há janela de console
     subprocess.Popen(
         f'cmd /c ping -n 3 127.0.0.1 >nul & start "" {comando}',
-        cwd=pasta, env=dict(os.environ, BAIXAR_YOUTUBE_MODO=modo),
+        cwd=pasta, env=dict(os.environ, PUXAI_MODO=modo),
         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
     )
 

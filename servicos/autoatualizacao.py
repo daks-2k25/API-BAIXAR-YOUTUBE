@@ -7,7 +7,7 @@ GitHub e, se houver versão nova, oferece a atualização:
   do projeto (downloads, ambiente, logs e atalho não são tocados).
 - Pasta clonada com git: roda "git pull", mas só se estiver na branch principal
   e sem mudanças locais (para não atrapalhar quem está desenvolvendo).
-- Programa gerado (BaixarYouTube.exe): o código está empacotado dentro dele;
+- Programa gerado (Puxai.exe): o código está empacotado dentro dele;
   é preciso gerar o programa de novo.
 
 Depois de atualizar, o programa reinicia pelo iniciar.bat, que também instala
@@ -39,7 +39,8 @@ ARQUIVO_MANIFESTO = os.path.join(PASTA_PROJETO, ".arquivos_do_programa.txt")
 
 # Pastas e arquivos da pessoa que a atualização nunca toca
 PROTEGIDOS = (
-    ".git", ".ambiente", ".venv", "downloads", "BaixarYouTube", "atualizacoes",
+    # "BaixarYouTube": pasta do programa gerado antes de o app se chamar Puxaí
+    ".git", ".ambiente", ".venv", "downloads", "Puxai", "BaixarYouTube", "atualizacoes",
     "ferramentas/compilacao", ".atalho_criado", ".arquivos_do_programa.txt",
     ".preferencias.json", ".historico.json", "cookies.txt",
 )
@@ -82,7 +83,7 @@ def _git(*argumentos):
 def como_atualizar():
     """Devolve ("zip" | "git", None) ou (None, motivo pelo qual não dá para atualizar aqui)."""
     if EXECUTAVEL:
-        return None, "Este é o programa gerado (BaixarYouTube.exe): para atualizar, gere o programa de novo com ferramentas\\gerar_exe.bat."
+        return None, "Este é o programa gerado (Puxai.exe): para atualizar, gere o programa de novo com ferramentas\\gerar_exe.bat."
 
     if os.path.isdir(os.path.join(PASTA_PROJETO, ".git")):
         if shutil.which("git") is None:

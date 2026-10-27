@@ -1,4 +1,4 @@
-"""Mantém o yt-dlp atualizado dentro do programa gerado (BaixarYouTube.exe).
+"""Mantém o yt-dlp atualizado dentro do programa gerado (Puxai.exe).
 
 O YouTube muda com frequência e versões antigas do yt-dlp param de funcionar.
 Rodando com Python (iniciar.bat), quem atualiza é o pip. Dentro do .exe, o yt-dlp

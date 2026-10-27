@@ -5,6 +5,7 @@ venv/
 downloads/
 .vscode/
 ferramentas/compilacao/
+Puxai/
 BaixarYouTube/
 *.lnk
 *.log

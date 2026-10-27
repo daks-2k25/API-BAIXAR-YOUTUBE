@@ -6,7 +6,7 @@ from servicos import programa
 from servicos.caminhos import PASTA_PAINEL
 from servicos.downloader import downloads_em_andamento
 
-TITULO = "Baixar YouTube"
+TITULO = "Puxaí"
 
 
 def colocar_icone_na_janela(titulo, caminho_icone):
@@ -61,7 +61,7 @@ def abrir_janela():
     if sys.platform == "win32":
         import ctypes
         # Faz a barra de tarefas tratar o programa como um aplicativo próprio (e não como "Python")
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("BaixarYouTube.Painel")
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Puxai.Painel")
 
     janela = programa.janela = webview.create_window(
         TITULO, programa.ENDERECO_PAINEL,
@@ -82,7 +82,7 @@ def abrir_janela():
         # Avisa antes de fechar se ainda há download acontecendo
         if downloads_em_andamento():
             return janela.create_confirmation_dialog(
-                "Fechar o Baixar YouTube?",
+                "Fechar o Puxaí?",
                 "Ainda há downloads em andamento. Se fechar agora, eles serão interrompidos.",
             )
         return True

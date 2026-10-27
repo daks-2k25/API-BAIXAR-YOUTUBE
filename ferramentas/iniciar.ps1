@@ -1,5 +1,5 @@
-﻿# Prepara tudo o que o Baixar YouTube precisa e abre o programa.
-# É chamado pelo iniciar.bat (e pelo atalho "Baixar YouTube" da Área de Trabalho).
+﻿# Prepara tudo o que o Puxaí precisa e abre o programa.
+# É chamado pelo iniciar.bat (e pelo atalho "Puxaí" da Área de Trabalho).
 #
 # Na primeira vez, instala sozinho o que estiver faltando:
 #   - uv: cuida do Python e das bibliotecas (usa o Python do PC ou baixa um, sem
@@ -17,7 +17,7 @@ $ErrorActionPreference = "Continue"
 
 $Projeto = Split-Path -Parent $PSScriptRoot
 Set-Location $Projeto
-$Host.UI.RawUI.WindowTitle = "Baixar YouTube"
+$Host.UI.RawUI.WindowTitle = "Puxaí"
 $instalouAlgo = $false
 
 # Ambiente do programa (Python + bibliotecas) fica na pasta .ambiente do projeto
@@ -66,15 +66,23 @@ function Garantir-Programa($comando, $idWinget, $nome) {
 function Criar-Atalho {
     # GetFolderPath acha a Área de Trabalho certa, mesmo quando ela está no OneDrive
     $areaDeTrabalho = [Environment]::GetFolderPath("Desktop")
-    $atalho = Join-Path $areaDeTrabalho "Baixar YouTube.lnk"
+    $atalho = Join-Path $areaDeTrabalho "Puxaí.lnk"
     $alvo = Join-Path $Projeto "iniciar.bat"
     $marca = Join-Path $Projeto ".atalho_criado"
     $shell = New-Object -ComObject WScript.Shell
 
+    # O app se chamava "Baixar YouTube": renomeia o atalho antigo em vez de criar outro
+    $antigo = Join-Path $areaDeTrabalho "Baixar YouTube.lnk"
+    $renomeado = $false
+    if ((Test-Path $antigo) -and -not (Test-Path $atalho)) {
+        Move-Item $antigo $atalho
+        $renomeado = $true
+    }
+
     if (Test-Path $atalho) {
-        # Já existe: só corrige se a pasta do projeto mudou de lugar
+        # Já existe: só corrige se a pasta do projeto mudou de lugar (ou se acabou de ser renomeado)
         $existente = $shell.CreateShortcut($atalho)
-        if ($existente.TargetPath -eq $alvo) { return }
+        if ($existente.TargetPath -eq $alvo -and -not $renomeado) { return }
     }
     elseif (Test-Path $marca) {
         return # A pessoa apagou o atalho de propósito: não cria de novo
@@ -84,11 +92,11 @@ function Criar-Atalho {
     $novo.TargetPath = $alvo
     $novo.WorkingDirectory = $Projeto
     $novo.IconLocation = Join-Path $Projeto "painel\icone.ico"
-    $novo.Description = "Abre o Baixar YouTube"
+    $novo.Description = "Abre o Puxaí"
     $novo.WindowStyle = 7 # minimizado: só a janela do programa aparece
     $novo.Save()
     Set-Content $marca (Get-Date).ToString("yyyy-MM-dd")
-    Escrever "Atalho `"Baixar YouTube`" criado na Área de Trabalho." Green
+    if (-not $renomeado) { Escrever "Atalho `"Puxaí`" criado na Área de Trabalho." Green }
 }
 
 try {
@@ -117,7 +125,7 @@ try {
     }
 
     # 3. Atualiza o yt-dlp no máximo uma vez por dia (o YouTube muda com frequência)
-    $marca = Join-Path $env:TEMP "baixar_youtube_ytdlp_atualizado.txt"
+    $marca = Join-Path $env:TEMP "puxai_ytdlp_atualizado.txt"
     $hoje = (Get-Date).ToString("yyyy-MM-dd")
     if (-not (Test-Path $marca) -or (Get-Content $marca -ErrorAction SilentlyContinue) -ne $hoje) {
         Escrever "Atualizando o yt-dlp..." Cyan
@@ -125,11 +133,11 @@ try {
         if ($LASTEXITCODE -eq 0) { Set-Content $marca $hoje }
     }
 
-    # 4. Atalho "Baixar YouTube" na Área de Trabalho (criado uma vez só)
+    # 4. Atalho "Puxaí" na Área de Trabalho (criado uma vez só)
     try { Criar-Atalho } catch { Escrever "[AVISO] Não consegui criar o atalho na Área de Trabalho: $($_.Exception.Message)" Yellow }
 
     # 5. Abre o programa (sem janela preta); ele abre a própria janela do painel
-    if ($instalouAlgo) { Escrever "`nTudo pronto! Abrindo o Baixar YouTube..." Green }
+    if ($instalouAlgo) { Escrever "`nTudo pronto! Abrindo o Puxaí..." Green }
     Start-Process -FilePath $pythonw -ArgumentList "app.py" -WorkingDirectory $Projeto -ErrorAction Stop
     if ($instalouAlgo) { Start-Sleep -Seconds 3 }
 }
