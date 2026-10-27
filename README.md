@@ -148,6 +148,8 @@ uv run app.py
 
 A aplicação roda em `http://127.0.0.1:5000`.
 
+**Segurança:** só o painel do programa pode usar a API pelo navegador. Pedidos vindos de outros sites (ou de outro programa local em outra porta, ou com um endereço que não seja `127.0.0.1`/`localhost`) recebem `403`, e a recusa fica registrada no `BaixarYouTube.log`. Programas fora do navegador, como `curl` e scripts, continuam podendo usar a API normalmente. Detalhes em `rotas/seguranca.py`.
+
 ### `POST /api/download`
 
 Coloca um vídeo na fila de download.
