@@ -83,7 +83,10 @@ def _git(*argumentos):
 def como_atualizar():
     """Devolve ("zip" | "git", None) ou (None, motivo pelo qual não dá para atualizar aqui)."""
     if EXECUTAVEL:
-        return None, "Este é o programa gerado (Puxai.exe): para atualizar, gere o programa de novo com ferramentas\\gerar_exe.bat."
+        return None, (
+            f"Baixe a versão nova em github.com/{REPOSITORIO}/releases/latest "
+            "e descompacte por cima da pasta do programa (suas configurações continuam)."
+        )
 
     if os.path.isdir(os.path.join(PASTA_PROJETO, ".git")):
         if shutil.which("git") is None:

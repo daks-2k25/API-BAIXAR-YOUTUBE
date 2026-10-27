@@ -2,7 +2,11 @@
 
 Aplicação em Python para baixar vídeos do **YouTube**, **TikTok** e **Instagram** em **MP4** ou extrair o áudio em **MP3**, além de converter e comprimir fotos (**HEIC**, **JPG**, **PNG** e **WebP**). Abre numa **janela própria**, com uma **API REST** por trás, feita com Flask e [yt-dlp](https://github.com/yt-dlp/yt-dlp).
 
-## Início rápido (Windows)
+## Baixar o programa pronto (Windows)
+
+O jeito mais simples: na página [**Releases**](https://github.com/daks-2k25/API-BAIXAR-YOUTUBE/releases/latest), baixe o **Puxai-X.Y.Z-windows.zip**, descompacte e abra o **Puxai.exe**. Não precisa instalar nada (nem Python, nem FFmpeg). Para atualizar, descompacte a versão nova por cima da pasta antiga.
+
+## Início rápido pelo código (Windows)
 
 1. Baixe o projeto: **Code → Download ZIP** no GitHub (e descompacte) ou `git clone https://github.com/daks-2k25/API-BAIXAR-YOUTUBE.git`.
 2. Dê dois cliques em **`iniciar.bat`**.
@@ -80,7 +84,7 @@ O programa passa a usar esse login automaticamente. O `cookies.txt` dá acesso �
 
 - **Projeto baixado como ZIP:** o programa baixa o ZIP novo do GitHub e substitui os arquivos do projeto. A pasta `downloads`, o ambiente do Python (`.ambiente`), os logs e o atalho não são tocados. Arquivos que saíram do projeto na versão nova são apagados.
 - **Projeto clonado com git:** o programa roda `git pull`, mas só se a pasta estiver na branch `main` e sem alterações locais no código. Assim, quem está desenvolvendo não tem o trabalho sobrescrito.
-- **Programa gerado (`Puxai.exe`):** o aviso aparece, mas para atualizar é preciso gerar o programa de novo.
+- **Programa gerado (`Puxai.exe`):** o aviso aparece com o link da página **Releases**, onde está o `.zip` da versão nova; é só descompactar por cima da pasta do programa.
 
 ## Publicando uma versão nova
 
@@ -126,7 +130,10 @@ API-BAIXAR-YOUTUBE/
 ├── logos/               # Identidade visual: logo e ícones em SVG, PNG e WebP
 ├── ferramentas/
 │   ├── iniciar.ps1      # Usado pelo iniciar.bat: instala o que faltar, cria o atalho e abre o programa
-│   └── gerar_exe.bat    # Gera o executável (PyInstaller)
+│   ├── gerar_exe.bat    # Gera o executável (PyInstaller), com o FFmpeg junto
+│   └── testar_exe.ps1   # Testa o executável gerado (usado também pelo GitHub)
+├── .github/workflows/
+│   └── gerar-exe.yml    # Gera e publica o .exe numa Release quando a versão muda
 └── README.md
 ```
 
@@ -142,7 +149,15 @@ O programa é gerado como pasta, e não como um `.exe` único, porque assim abre
 
 O yt-dlp vai empacotado no programa, mas **se atualiza sozinho**: uma vez por dia o programa procura uma versão nova no PyPI, baixa (conferindo o SHA-256) e passa a usá-la na próxima abertura. As versões baixadas ficam em `Puxai\atualizacoes\`.
 
-O FFmpeg não vai dentro do executável: ele precisa estar instalado no PC, ou o `ffmpeg.exe` precisa ficar dentro da pasta `Puxai\`.
+O `gerar_exe.bat` copia o FFmpeg deste PC (`ffmpeg.exe` e `ffprobe.exe`) para dentro da pasta `Puxai\`, então o programa gerado funciona em outro PC sem instalar nada.
+
+Para conferir o programa gerado: `powershell -File ferramentas\testar_exe.ps1`. Ele abre uma cópia do programa (sem o FFmpeg instalado no PC, para garantir que o incluído funciona), testa a API, converte e comprime uma imagem e fecha.
+
+### Gerado automaticamente pelo GitHub
+
+Sempre que a versão muda no `versao.json` e vai para a `main`, o GitHub gera o programa sozinho (`.github/workflows/gerar-exe.yml`): baixa o FFmpeg (conferindo o SHA-256), roda o mesmo `gerar_exe.bat`, testa com o `testar_exe.ps1` e publica o `.zip` numa **Release** `vX.Y.Z`, com as novidades da versão. Só publica se o teste passar e se ainda não existir uma Release dessa versão.
+
+Para testar sem publicar: aba **Actions → Gerar o Puxai.exe → Run workflow**. O `.zip` fica para baixar em **Artifacts**, na página da execução, por 7 dias.
 
 ## Rodando em outros sistemas (Linux/macOS)
 

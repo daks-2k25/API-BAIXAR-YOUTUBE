@@ -1,0 +1,120 @@
+# Gera o programa para Windows (Puxai.exe, com o FFmpeg junto) e publica
+# numa Release do GitHub, para quem quiser só baixar e usar.
+#
+# - Sozinho: quando a versão muda no versao.json (push na main). Se a Release
+#   dessa versão já existir (ex.: mudou só o texto das novidades), não publica.
+# - Pelo botão "Run workflow" (aba Actions): só gera e testa, sem publicar. O
+#   .zip fica para baixar em "Artifacts", na página da execução.
+#
+# A receita é a mesma do ferramentas\gerar_exe.bat (usado aqui) e o teste é o
+# ferramentas\testar_exe.ps1: o que roda no seu PC é o que roda aqui.
+name: Gerar o Puxai.exe
+
+on:
+  push:
+    branches: [main]
+    paths: [versao.json]
+  workflow_dispatch:
+
+permissions:
+  contents: write  # criar a Release e a tag da versão
+
+concurrency:
+  group: gerar-exe
+  cancel-in-progress: false
+
+jobs:
+  gerar:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ler a versão e as novidades
+        id: versao
+        shell: pwsh
+        run: |
+          $dados = Get-Content versao.json -Raw -Encoding UTF8 | ConvertFrom-Json
+          $versao = $dados.versao
+          "versao=$versao" >> $env:GITHUB_OUTPUT
+
+          gh release view "v$versao" *> $null
+          $jaExiste = $LASTEXITCODE -eq 0
+          $publicar = ("${{ github.event_name }}" -eq "push") -and -not $jaExiste
+          "publicar=$($publicar.ToString().ToLower())" >> $env:GITHUB_OUTPUT
+          Write-Host "Versão $versao | Release já existe: $jaExiste | Publicar: $publicar"
+
+          $notas = @("## Novidades", "") + ($dados.novidades | ForEach-Object { "- $_" }) + @(
+            "",
+            "## Como usar",
+            "",
+            "1. Baixe o **Puxai-$versao-windows.zip** aqui embaixo, em *Assets*, e descompacte.",
+            "2. Abra o **Puxai.exe** que está dentro da pasta **Puxai**. Não precisa instalar nada: o FFmpeg já vem junto.",
+            "3. Se o Windows mostrar ""O Windows protegeu o computador"", clique em **Mais informações → Executar assim mesmo**.",
+            "",
+            "**Para atualizar:** descompacte a versão nova por cima da pasta antiga, substituindo os arquivos. Suas configurações e o histórico continuam."
+          )
+          $notas -join "`n" | Set-Content notas.md -Encoding utf8
+          exit 0
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Baixar o FFmpeg (conferindo o SHA-256)
+        shell: pwsh
+        run: |
+          # O build "essentials" do gyan.dev, baixado do espelho que o próprio autor mantém
+          # no GitHub (o site dele é lento demais para isto) e conferido com o SHA-256
+          # publicado no site oficial
+          $versao = gh release view --repo GyanD/codexffmpeg --json tagName -q .tagName
+          gh release download $versao --repo GyanD/codexffmpeg --pattern "ffmpeg-$versao-essentials_build.zip" --output ffmpeg.zip
+          Invoke-WebRequest "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-$versao-essentials_build.zip.sha256" -OutFile ffmpeg.zip.sha256
+          $esperado = ((Get-Content ffmpeg.zip.sha256 -Raw).Trim() -split '\s+')[0].ToUpper()
+          $obtido = (Get-FileHash ffmpeg.zip -Algorithm SHA256).Hash
+          if ($obtido -ne $esperado) { throw "O SHA-256 do FFmpeg não confere: $obtido (esperado $esperado)" }
+
+          Expand-Archive ffmpeg.zip -DestinationPath ffmpeg
+          $bin = (Get-ChildItem ffmpeg -Recurse -Filter ffmpeg.exe | Select-Object -First 1).DirectoryName
+          & "$bin\ffmpeg.exe" -hide_banner -version | Select-Object -First 1
+
+          # O programa precisa destes codificadores: vídeo H.264, MP3 e WebP
+          $codificadores = & "$bin\ffmpeg.exe" -hide_banner -encoders
+          foreach ($nome in "libx264", "libmp3lame", "libwebp") {
+            if (-not ($codificadores -match " $nome ")) { throw "O FFmpeg baixado não tem o $nome" }
+          }
+          # Na frente do PATH: é este que o gerar_exe.bat copia para dentro do programa
+          $bin | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+
+      - name: Gerar o programa
+        shell: cmd
+        run: ferramentas\gerar_exe.bat
+
+      - name: Testar o programa gerado
+        shell: pwsh
+        run: ./ferramentas/testar_exe.ps1
+
+      - name: Compactar
+        id: zip
+        shell: pwsh
+        run: |
+          $zip = "Puxai-${{ steps.versao.outputs.versao }}-windows.zip"
+          7z a -tzip -mx=7 $zip Puxai | Select-Object -Last 3
+          "arquivo=$zip" >> $env:GITHUB_OUTPUT
+          Write-Host ("Tamanho: {0:N0} MB" -f ((Get-Item $zip).Length / 1MB))
+
+      - name: Guardar o .zip nesta execução (para testar antes de publicar)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.zip.outputs.arquivo }}
+          path: ${{ steps.zip.outputs.arquivo }}
+          retention-days: 7
+
+      - name: Publicar a Release
+        if: steps.versao.outputs.publicar == 'true'
+        shell: pwsh
+        run: |
+          $versao = "${{ steps.versao.outputs.versao }}"
+          gh release create "v$versao" "${{ steps.zip.outputs.arquivo }}" `
+            --title "Puxaí $versao" --notes-file notas.md --target $env:GITHUB_SHA
