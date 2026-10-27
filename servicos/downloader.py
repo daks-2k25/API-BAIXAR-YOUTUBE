@@ -7,6 +7,7 @@ import threading
 import time
 
 import yt_dlp
+from yt_dlp.postprocessor import PostProcessor
 from yt_dlp.utils import DownloadCancelled, download_range_func
 
 from servicos import historico
@@ -61,6 +62,55 @@ def apagar_temporarios(id_download):
             os.remove(caminho)
         except OSError:
             pass
+
+
+# "(Official Video)", "[Lyrics]", "(4K Remaster)", "(Clipe Oficial)"...: sobra do título
+# do vídeo que não faz parte do nome da música. "(feat. X)", "(Ao Vivo)" e "(Remix)" ficam.
+SOBRAS_DO_TITULO = re.compile(
+    r"\s*[(\[][^)\]]*\b(official|oficial|video|vídeo|videoclipe|clipe|clip|audio|áudio|"
+    r"lyrics?|letra|visualizer|remaster(ed)?|hd|hq|4k|mv)\b[^)\]]*[)\]]",
+    re.IGNORECASE,
+)
+
+
+def titulo_da_musica(titulo, artista):
+    """"Rick Astley - Never Gonna Give You Up (Official Video)" -> "Never Gonna Give You Up"."""
+    limpo = SOBRAS_DO_TITULO.sub("", titulo).strip()
+    if artista:
+        for separador in (" - ", " – ", " — ", " | "):
+            if limpo.lower().startswith(artista.lower() + separador):
+                limpo = limpo[len(artista) + len(separador):].strip()
+                break
+    return limpo or titulo
+
+
+class DadosDoMp3(PostProcessor):
+    """Ajusta o que vai gravado no MP3 (o que aparece no player e no celular).
+
+    O yt-dlp usa os campos "meta_*" no lugar dos que ele escolheria sozinho:
+    - título: o nome da música; sem ele, o título do vídeo sem o artista na
+      frente nem "(Official Video)" etc. (no TikTok/Instagram, o título amigável,
+      porque o "título" original é a legenda inteira do post)
+    - artista: os artistas da música oficial ou o canal, sem o " - Topic"
+    - gênero: só um gênero de verdade (o padrão seriam as tags do vídeo)
+    - descrição: fica de fora (a do YouTube é enorme e cheia de links);
+      no comentário vai o link do vídeo
+    """
+
+    def run(self, info):
+        artistas = info.get('artists') or ([info['artist']] if info.get('artist') else [])
+        canal = (info.get('channel') or info.get('uploader') or '').removesuffix(' - Topic')
+        ano = info.get('release_year') or (info.get('upload_date') or '')[:4]
+
+        artista = ', '.join(artistas) or canal
+        info['meta_title'] = info.get('track') or titulo_da_musica(titulo_amigavel(info), artistas[0] if artistas else canal)
+        info['meta_artist'] = artista
+        info['meta_date'] = str(ano or '')
+        info['meta_genre'] = info.get('genre') or ''
+        info['meta_description'] = ''
+        info['meta_synopsis'] = ''
+        info['meta_comment'] = info.get('webpage_url') or ''
+        return [], info
 
 
 def worker_fila():
@@ -122,13 +172,30 @@ def processar(tarefa):
     if formato == "mp3":
         ydl_opts.update({
             'format': 'bestaudio/best',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-            # Conversão para MP3 ~2,5x mais rápida, sem diferença audível a 192 kbps
-            'postprocessor_args': {'extractaudio': ['-compression_level', '7']},
+            # Baixa a miniatura do vídeo para virar a capa do MP3
+            'writethumbnail': True,
+            'postprocessors': [
+                {
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '192',
+                },
+                # Título, artista, álbum e ano (ajustados por DadosDoMp3)
+                {'key': 'FFmpegMetadata', 'add_metadata': True},
+                # Capa: a miniatura vira JPG quadrado (corte no centro)
+                {'key': 'FFmpegThumbnailsConvertor', 'format': 'jpg', 'when': 'before_dl'},
+                {'key': 'EmbedThumbnail'},
+            ],
+            'postprocessor_args': {
+                # Conversão para MP3 ~2,5x mais rápida, sem diferença audível a 192 kbps
+                'extractaudio': ['-compression_level', '7'],
+                # Capa quadrada, como a de um álbum. Na música oficial do YouTube a
+                # miniatura é a capa do álbum com faixas dos lados: o corte deixa só a capa
+                'thumbnailsconvertor+ffmpeg_o': [
+                    '-c:v', 'mjpeg', '-q:v', '3',
+                    '-vf', "crop='if(gt(ih,iw),iw,ih)':'if(gt(iw,ih),ih,iw)'",
+                ],
+            },
         })
     else:
         ydl_opts.update({
@@ -162,6 +229,8 @@ def processar(tarefa):
                 status_download[id_download] = "Baixando..."
 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    if formato == "mp3":
+                        ydl.add_post_processor(DadosDoMp3(), when='pre_process')
                     info = ydl.extract_info(url, download=True)
                 parar_se_cancelado()
 

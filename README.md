@@ -27,7 +27,7 @@ No primeiro clique ele também cria o atalho **Puxaí**, com a logo, na **Área 
 - **Prévia do vídeo** ao colar o link: miniatura, título, canal e duração, com opção de assistir ali mesmo para conferir antes de baixar
 - **YouTube, TikTok e Instagram** (vídeos e reels): é só colar o link
 - Download de vídeo em **MP4** com **escolha de resolução** (360p, 480p, 720p ou 1080p), inclusive em vídeos verticais (TikTok, Reels, Shorts). No TikTok, sempre a versão **sem marca d'água**
-- Extração de áudio em **MP3** (192 kbps)
+- Extração de áudio em **MP3** (192 kbps) com **capa e informações**: a miniatura do vídeo vira a capa (quadrada, como a de um álbum), e o MP3 leva título, artista, álbum (quando o YouTube informa) e ano, para aparecer certinho no player e no celular. O título sai sem o artista na frente e sem "(Official Video)", "[Lyrics]" e parecidos; no comentário vai o link do vídeo
 - **Até 3 downloads ao mesmo tempo**, com acompanhamento de progresso
 - **Nova tentativa automática** quando o YouTube falha momentaneamente
 - **Playlists e canais**: cole o link e aparece a lista de vídeos (até 200) com caixinhas para marcar quais baixar. Os arquivos podem ir para uma pasta com o nome da playlist, numerados na ordem (`01 - Título`), bom para álbuns. Se o link for de um vídeo aberto dentro de uma playlist, o painel pergunta: **Usar só este vídeo** ou **Baixar a playlist**
