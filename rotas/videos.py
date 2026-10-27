@@ -5,8 +5,9 @@ import uuid
 
 from flask import Blueprint, jsonify, request, send_file
 
+from servicos import compressor_video
 from servicos.downloader import (
-    adicionar_fila, arquivos_salvos, cancelar_download, erros_download, nome_de_arquivo_seguro,
+    adicionar_fila, arquivos_salvos, cancelar_download, erros_download, extras_download, nome_de_arquivo_seguro,
     status_download, titulos_download,
 )
 from rotas.utilidades import pasta_do_arquivo
@@ -162,6 +163,8 @@ def progresso(id_download):
         "arquivo": os.path.basename(caminho) if caminho else None,  # nome do arquivo salvo
         "pasta": pasta_do_arquivo(caminho),  # nome da pasta onde ficou ("Downloads", "Músicas"...)
         "erro": erros_download.get(id_download) if status == "Erro" else None,  # motivo da falha
+        # Compressão de vídeo: tamanho antes/depois, resolução final, "ja_otimizada"
+        "extra": extras_download.get(id_download),
     }
 
 
@@ -181,7 +184,8 @@ def progresso_lote_api():
 
 @rotas.route('/api/cancelar/<id_download>', methods=['POST'])
 def cancelar_api(id_download):
-    if not cancelar_download(id_download):
+    # Vale para downloads e para compressões de vídeo (que usam a mesma lista de status)
+    if not compressor_video.cancelar(id_download) and not cancelar_download(id_download):
         return jsonify({"erro": "Esse download não existe ou já terminou."}), 404
     return jsonify({"mensagem": "Cancelando...", "id": id_download})
 

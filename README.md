@@ -38,6 +38,7 @@ No primeiro clique ele também cria o atalho **Puxaí**, com a logo, na **Área 
 - **Cancelar** downloads na fila ou em andamento
 - **Conversão de fotos**: HEIC para JPG, e HEIC, JPG ou PNG para WebP (bem menor, mantém a transparência do PNG), salvo direto em Downloads
 - **Compressor de fotos**: JPG, PNG, WebP e HEIC, uma ou várias de uma vez. Testa algumas qualidades em cada foto e fica com o menor arquivo que continua visualmente igual (medido pelo SSIM), em três níveis. Nunca deixa o arquivo maior, corrige a orientação das fotos de celular, remove a localização (GPS) e pode reduzir o tamanho (2560, 1920 ou 1280 px)
+- **Compressor de vídeos**: MP4, MOV, MKV, WebM, AVI e outros viram MP4 (H.264), que abre em qualquer lugar. Para **caber num tamanho** (WhatsApp 16 MB, Discord 10 MB, E-mail 25 MB ou outro), em duas passadas e reduzindo a resolução sozinho quando o vídeo é longo; ou por **qualidade** (alta, equilibrada ou máxima compressão). Resolução máxima opcional (1080p, 720p, 480p), andamento em %, cancelar no meio e vídeos de celular continuam em pé. Nunca deixa o arquivo maior
 - **Meus downloads**: lista do que o programa já salvou (vídeos, músicas e fotos), com filtros, **Abrir** e **Mostrar na pasta**, mesmo depois de fechar e abrir o programa
 - **Executável para Windows**, que não precisa de Python instalado e mantém o yt-dlp atualizado sozinho
 
@@ -49,6 +50,7 @@ No primeiro clique ele também cria o atalho **Puxaí**, com a logo, na **Área 
 - **Cancelar:** cada download tem um botão **✕ Cancelar** enquanto está na fila ou baixando.
 - **Converter foto:** escolha **JPG** (a partir de HEIC) ou **WebP** (a partir de HEIC, JPG ou PNG), depois arraste uma ou várias fotos (ou clique para escolher). Elas são convertidas uma de cada vez, cada uma aparece na lista com o resultado, e as convertidas vão para a pasta Downloads. Se uma foto não for aceita (ex.: PNG para JPG), só ela mostra o erro e as outras continuam.
 - **Comprimir foto:** escolha o nível (**Alta qualidade**, **Equilibrado** ou **Máxima compressão**) e, se quiser, um tamanho máximo, e arraste uma ou várias fotos. Cada foto aparece com o tamanho antes e depois, e a versão comprimida vai para Downloads com "(comprimida)" no nome. JPG, PNG e WebP continuam no mesmo formato; HEIC vira JPG. Se a foto já estiver bem comprimida, nada é salvo.
+- **Comprimir vídeo:** escolha **Caber num tamanho** (WhatsApp, Discord, E-mail ou **Outro**, em MB) ou **Escolher a qualidade**, e, se quiser, uma resolução máxima. Arraste um ou vários vídeos: eles são comprimidos um de cada vez, com o andamento em % e o botão **✕ Cancelar**. O vídeo comprimido vai para a pasta de vídeos com "(comprimido)" no nome. Leva mais ou menos metade do tempo do vídeo (um vídeo de 3 minutos em 1080p fica pronto em cerca de 1 minuto para o WhatsApp). Se o vídeo já couber no tamanho, ou já estiver bem comprimido (como os baixados do YouTube), nada é salvo. Se for longo demais para o tamanho escolhido, o programa avisa.
 - **Meus downloads:** mostra tudo o que o programa salvou, do mais novo para o mais antigo, com data e tamanho. Filtre por **Vídeos**, **Músicas** ou **Fotos**, e use **Abrir** (abre no player ou visualizador do Windows) ou **Mostrar na pasta**. **Remover da lista** e **Limpar lista** só tiram da lista: os arquivos continuam na pasta Downloads. Se um arquivo foi apagado ou movido, ele aparece riscado.
 - **Atualizar:** quando sair uma versão nova, aparece uma notificação no canto da janela, um aviso no topo e uma bolinha no sino 🔔. Clique em **Atualizar agora**: o programa baixa a versão nova, reinicia sozinho e continua com seus arquivos e configurações. Com o programa aberto, ele confere se saiu versão nova a cada 30 minutos. A versão instalada aparece no rodapé.
 - **Depois:** se preferir atualizar mais tarde, clique em **Depois**. A notificação não volta para essa versão (o sino continua com a bolinha, e a atualização fica disponível nele). Se sair uma versão ainda mais nova, o programa avisa de novo.
@@ -114,6 +116,7 @@ API-BAIXAR-YOUTUBE/
 │   ├── destinos.py      # Onde salvar os arquivos (uma pasta ou separadas) e a janela de escolher pasta
 │   ├── historico.py     # Aba "Meus downloads": o que o programa salvou (.historico.json)
 │   ├── compressor.py    # Aba "Comprimir foto": menor arquivo sem perda visível (FFmpeg + SSIM)
+│   ├── compressor_video.py # Aba "Comprimir vídeo": caber num tamanho (2 passadas) ou por qualidade
 │   ├── autoatualizacao.py # Botão "Atualizar agora": baixa e instala a versão nova
 │   ├── atualizador.py   # Mantém o yt-dlp atualizado dentro do executável
 │   ├── downloader.py    # Fila de downloads, corte de trecho e cancelamento (yt-dlp)
@@ -322,6 +325,25 @@ A resposta é a foto comprimida. Com `?salvar=1` (usado pelo painel), ela vai pa
 ```bash
 curl -X POST http://127.0.0.1:5000/api/comprimir \
   -F "arquivo=@foto.jpg" -F "nivel=equilibrado" -F "tamanho=1920" -OJ
+```
+
+### `POST /api/comprimir-video`
+
+Coloca um vídeo na fila de compressão (um por vez). Envie como `multipart/form-data`:
+
+| Campo | Valores |
+|-------|---------|
+| `arquivo` | o vídeo (MP4, MOV, MKV, WebM, AVI, M4V, 3GP, WMV, FLV, MPG, TS) |
+| `modo` | `tamanho` (padrão) ou `qualidade` |
+| `tamanho` | com `modo=tamanho`: `whatsapp` (16 MB), `discord` (10 MB), `email` (25 MB) ou um número de MB (1 a 4000) |
+| `qualidade` | com `modo=qualidade`: `alta`, `equilibrada` (padrão) ou `forte` |
+| `resolucao` | maior resolução: `original` (padrão), `1080`, `720` ou `480` |
+
+Responde `202` com `{"id": "...", "status": "Na fila..."}`. Acompanhe por `GET /api/progresso/<id>` (o `status` vai de `"0.0%"` a `"99.0%"` e termina em `Pronto`, `Erro` ou `Cancelado`) e cancele por `POST /api/cancelar/<id>`. Quando fica pronto, `extra` traz `antes` e `depois` (bytes), `largura`, `altura` e `ja_otimizada` (`true` quando não havia o que diminuir e nada foi salvo).
+
+```bash
+curl -X POST http://127.0.0.1:5000/api/comprimir-video \
+  -F "arquivo=@video.mov" -F "modo=tamanho" -F "tamanho=whatsapp"
 ```
 
 ### `GET /api/historico`

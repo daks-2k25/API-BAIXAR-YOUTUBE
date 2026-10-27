@@ -27,7 +27,8 @@ def iniciar_servidor():
     from waitress import serve
     # Waitress: servidor robusto (o do Flask é só para desenvolvimento).
     # threads=16: atende o painel enquanto os downloads acontecem
-    serve(app, host="127.0.0.1", port=programa.PORTA, threads=16)
+    # max_request_body_size: o padrão (1 GB) barraria vídeos grandes de celular (4K)
+    serve(app, host="127.0.0.1", port=programa.PORTA, threads=16, max_request_body_size=32 * 1024**3)
 
 
 def usar_navegador(servidor, abrir=True):

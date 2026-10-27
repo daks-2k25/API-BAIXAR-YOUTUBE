@@ -2,6 +2,7 @@
 
 - videos.py       baixar vídeos e músicas (YouTube, TikTok, Instagram)
 - fotos.py        converter e comprimir fotos
+- comprimir_video.py  comprimir vídeos do computador
 - arquivos.py     mostrar na pasta, abrir e "Meus downloads"
 - programa.py     janela ou navegador, preferências, encerrar
 - atualizacao.py  versão nova e botão "Atualizar agora"
@@ -9,7 +10,7 @@
 from flask import Flask, send_from_directory
 
 from servicos.caminhos import PASTA_PAINEL
-from rotas import arquivos, atualizacao, fotos, programa, videos
+from rotas import arquivos, atualizacao, comprimir_video, fotos, programa, videos
 from rotas.seguranca import proteger
 
 
@@ -22,6 +23,6 @@ def criar_app():
     def painel():
         return send_from_directory(PASTA_PAINEL, "index.html")
 
-    for modulo in (videos, fotos, arquivos, programa, atualizacao):
+    for modulo in (videos, fotos, comprimir_video, arquivos, programa, atualizacao):
         app.register_blueprint(modulo.rotas)
     return app

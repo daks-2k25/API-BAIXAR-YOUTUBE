@@ -29,6 +29,7 @@ titulos_download = {}  # ID -> título do vídeo
 arquivos_salvos = {}   # ID -> caminho do arquivo pronto na pasta Downloads
 cancelados = set()     # IDs que o usuário pediu para cancelar
 erros_download = {}    # ID -> mensagem explicando por que o download falhou
+extras_download = {}   # ID -> dados a mais para o painel (ex.: tamanho antes/depois de comprimir um vídeo)
 fila_downloads = queue.Queue()
 
 

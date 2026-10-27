@@ -96,6 +96,7 @@
         <button class="aba ativa" data-aba="youtube">Vídeos</button>
         <button class="aba" data-aba="heic">Converter foto</button>
         <button class="aba" data-aba="comprimir">Comprimir foto</button>
+        <button class="aba" data-aba="comprimir-video">Comprimir vídeo</button>
         <button class="aba" data-aba="meus-downloads">Meus downloads</button>
       </nav>
 
@@ -255,6 +256,56 @@
         </label>
         <p id="resumo-compressao" class="resumo-compressao"></p>
         <ul id="lista-compressao" class="lista-fotos"></ul>
+      </section>
+
+      <!-- Ferramenta 4: Comprimir vídeo (para caber num tamanho ou por qualidade) -->
+      <section id="comprimir-video" class="card escondido">
+        <div class="opcoes-compressao">
+          <div>
+            <p class="rotulo-opcao">Comprimir para</p>
+            <div class="grupo" id="modos-video">
+              <button type="button" class="chip ativo" data-modo="tamanho">Caber num tamanho</button>
+              <button type="button" class="chip" data-modo="qualidade">Escolher a qualidade</button>
+            </div>
+          </div>
+          <div id="opcoes-tamanho-video">
+            <p class="rotulo-opcao">Tamanho máximo do arquivo</p>
+            <div class="grupo" id="tamanhos-video">
+              <button type="button" class="chip ativo" data-tamanho="whatsapp">WhatsApp · 16 MB</button>
+              <button type="button" class="chip" data-tamanho="discord">Discord · 10 MB</button>
+              <button type="button" class="chip" data-tamanho="email">E-mail · 25 MB</button>
+              <button type="button" class="chip" data-tamanho="outro">Outro</button>
+              <label id="campo-outro-mb" class="campo-mb escondido">
+                <input id="outro-mb" type="number" min="1" max="4000" step="1" value="50" /> MB
+              </label>
+            </div>
+          </div>
+          <div id="opcoes-qualidade-video" class="escondido">
+            <p class="rotulo-opcao">Qualidade</p>
+            <div class="grupo" id="qualidades-video">
+              <button type="button" class="chip" data-qualidade="alta">Alta</button>
+              <button type="button" class="chip ativo" data-qualidade="equilibrada">Equilibrada</button>
+              <button type="button" class="chip" data-qualidade="forte">Máxima compressão</button>
+            </div>
+          </div>
+          <div>
+            <p class="rotulo-opcao">Resolução máxima</p>
+            <div class="grupo" id="resolucoes-video">
+              <button type="button" class="chip ativo" data-resolucao="original">Original</button>
+              <button type="button" class="chip" data-resolucao="1080">1080p</button>
+              <button type="button" class="chip" data-resolucao="720">720p</button>
+              <button type="button" class="chip" data-resolucao="480">480p</button>
+            </div>
+          </div>
+          <p id="dica-video" class="dica-compressao"></p>
+        </div>
+        <label class="area-arquivo" id="area-video">
+          <input id="arquivos-video" type="file" accept=".mp4,.mov,.mkv,.webm,.avi,.m4v,.3gp,.wmv,.flv,.mpg,.mpeg,.ts,video/*" multiple hidden />
+          <span class="icone">⬇</span>
+          <span>Clique ou arraste um ou vários vídeos (<b>MP4</b>, <b>MOV</b>, <b>MKV</b>...)</span>
+        </label>
+        <p id="resumo-video" class="resumo-compressao"></p>
+        <ul id="lista-video" class="lista-fotos"></ul>
       </section>
 
       <!-- Meus downloads: histórico do que o programa salvou (preenchido pelo script.js) -->

@@ -618,16 +618,22 @@ setInterval(async () => {
     }
 }, 700);
 
-// "3 downloads em andamento · ✕ Cancelar todos" (aparece com 2 ou mais)
+// "3 downloads em andamento · ✕ Cancelar todos" (aparece com 2 ou mais).
+// Conta só os downloads: as compressões de vídeo usam a mesma consulta de progresso.
 const topoDownloads = document.getElementById("downloads-topo");
+const idsDeDownload = new Set();
+const downloadsAtivos = () => [...acompanhando.keys()].filter((id) => idsDeDownload.has(id));
+
 function atualizarTopoDownloads() {
-    topoDownloads.classList.toggle("escondido", acompanhando.size < 2);
-    document.getElementById("downloads-contagem").textContent = `${acompanhando.size} downloads em andamento`;
+    const ativos = downloadsAtivos().length;
+    topoDownloads.classList.toggle("escondido", ativos < 2);
+    document.getElementById("downloads-contagem").textContent = `${ativos} downloads em andamento`;
 }
 
 document.getElementById("cancelar-todos").addEventListener("click", async () => {
-    if (!confirm(`Cancelar os ${acompanhando.size} downloads em andamento e na fila?`)) return;
-    await Promise.all([...acompanhando.keys()].map((id) => fetch(`/api/cancelar/${id}`, { method: "POST" }).catch(() => {})));
+    const ativos = downloadsAtivos();
+    if (!confirm(`Cancelar os ${ativos.length} downloads em andamento e na fila?`)) return;
+    await Promise.all(ativos.map((id) => fetch(`/api/cancelar/${id}`, { method: "POST" }).catch(() => {})));
 });
 
 function marcarErro(item, mensagem) {
@@ -669,6 +675,7 @@ function criarItem(id, descricao, tituloDaPrevia, { inserir = true } = {}) {
     });
 
     // Chamada pela consulta única de progresso; devolve true quando terminou
+    idsDeDownload.add(id);
     acompanhando.set(id, (dados) => {
         status.textContent = dados.status;
 
@@ -957,6 +964,157 @@ function atualizarResumoCompressao() {
     const economia = antes ? Math.round((1 - depois / antes) * 100) : 0;
     resumoCompressao.textContent = `${fotos} ${fotos === 1 ? "foto" : "fotos"} · `
         + `economizou ${formatarTamanho(antes - depois)} (−${economia}%) · salvas em ${totalCompressao.pasta || "Downloads"}`;
+}
+
+// ==========================================
+// FERRAMENTA 4: COMPRIMIR VÍDEO
+// ==========================================
+const campoVideos = document.getElementById("arquivos-video");
+const areaVideo = document.getElementById("area-video");
+const listaVideo = document.getElementById("lista-video");
+const resumoVideo = document.getElementById("resumo-video");
+const dicaVideo = document.getElementById("dica-video");
+const campoOutroMb = document.getElementById("outro-mb");
+const opcoesVideo = { modo: "tamanho", tamanho: "whatsapp", qualidade: "equilibrada", resolucao: "original" };
+const totalVideo = { videos: 0, antes: 0, depois: 0, pasta: null };
+let filaEnvioVideo = Promise.resolve();
+
+const DICAS_VIDEO = {
+    tamanho: "O vídeo é ajustado para caber no tamanho. Se for longo, a resolução diminui sozinha para continuar nítido.",
+    alta: "Quase sem diferença do original. Economiza menos.",
+    equilibrada: "Bem menor, sem diferença visível na tela do celular. Recomendado.",
+    forte: "O menor arquivo; pode perder um pouco de detalhe.",
+};
+
+function atualizarOpcoesVideo() {
+    const porTamanho = opcoesVideo.modo === "tamanho";
+    document.getElementById("opcoes-tamanho-video").classList.toggle("escondido", !porTamanho);
+    document.getElementById("opcoes-qualidade-video").classList.toggle("escondido", porTamanho);
+    document.getElementById("campo-outro-mb").classList.toggle("escondido", opcoesVideo.tamanho !== "outro");
+    dicaVideo.textContent = porTamanho ? DICAS_VIDEO.tamanho : DICAS_VIDEO[opcoesVideo.qualidade];
+}
+escolherChip("#modos-video", (d) => { opcoesVideo.modo = d.modo; atualizarOpcoesVideo(); });
+escolherChip("#tamanhos-video", (d) => {
+    opcoesVideo.tamanho = d.tamanho;
+    atualizarOpcoesVideo();
+    if (d.tamanho === "outro") campoOutroMb.focus();
+});
+escolherChip("#qualidades-video", (d) => { opcoesVideo.qualidade = d.qualidade; atualizarOpcoesVideo(); });
+escolherChip("#resolucoes-video", (d) => (opcoesVideo.resolucao = d.resolucao));
+atualizarOpcoesVideo();
+
+campoVideos.addEventListener("change", () => {
+    comprimirVideos([...campoVideos.files]);
+    campoVideos.value = "";
+});
+areaVideo.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    areaVideo.classList.add("arrastando");
+});
+areaVideo.addEventListener("dragleave", () => areaVideo.classList.remove("arrastando"));
+areaVideo.addEventListener("drop", (e) => {
+    e.preventDefault();
+    areaVideo.classList.remove("arrastando");
+    comprimirVideos([...e.dataTransfer.files]);
+});
+
+function comprimirVideos(arquivos) {
+    // Cada vídeo leva as opções escolhidas na hora em que foi enviado
+    const opcoes = { ...opcoesVideo, tamanho: opcoesVideo.tamanho === "outro" ? campoOutroMb.value : opcoesVideo.tamanho };
+    const lote = document.createDocumentFragment();
+    arquivos.forEach((arquivo) => {
+        const item = criarItemFoto(arquivo.name);
+        lote.appendChild(item);
+        // Envia um de cada vez (vídeos podem ter centenas de MB); a compressão em si também é um por vez
+        filaEnvioVideo = filaEnvioVideo.then(() => enviarVideo(arquivo, opcoes, item));
+    });
+    listaVideo.prepend(lote);
+}
+
+async function enviarVideo(arquivo, opcoes, item) {
+    const status = item.querySelector(".item-status");
+    const acoes = item.querySelector(".item-acoes");
+    status.textContent = "Enviando...";
+
+    const formulario = new FormData();
+    formulario.append("arquivo", arquivo);
+    Object.entries(opcoes).forEach(([chave, valor]) => formulario.append(chave, valor));
+
+    const resposta = await fetch("/api/comprimir-video", { method: "POST", body: formulario }).catch(() => null);
+    const dados = resposta ? await resposta.json().catch(() => ({})) : {};
+    if (!resposta || !resposta.ok) {
+        item.classList.add("erro");
+        status.textContent = "Erro";
+        acoes.textContent = dados.erro || "Não foi possível enviar o vídeo.";
+        return;
+    }
+    acompanharVideo(dados.id, item);
+}
+
+function acompanharVideo(id, item) {
+    const status = item.querySelector(".item-status");
+    const barra = item.querySelector(".barra-preenchida");
+    const acoes = item.querySelector(".item-acoes");
+    status.textContent = "Na fila...";
+    acoes.innerHTML = `<button type="button" class="item-botao cancelar">✕ Cancelar</button>`;
+    const botaoCancelar = acoes.querySelector("button");
+    botaoCancelar.addEventListener("click", () => {
+        botaoCancelar.disabled = true;
+        botaoCancelar.textContent = "Cancelando...";
+        fetch(`/api/cancelar/${id}`, { method: "POST" }).catch(() => {});
+    });
+
+    acompanhando.set(id, (dados) => {
+        if (dados.status.endsWith("%")) {
+            status.textContent = `Comprimindo ${Math.floor(parseFloat(dados.status))}%`;
+            barra.style.width = dados.status;
+            return false;
+        }
+        if (dados.status === "Na fila...") return false;
+
+        if (dados.status === "Cancelado") {
+            item.classList.add("cancelado");
+            status.textContent = "Cancelado";
+            acoes.innerHTML = "";
+            return true;
+        }
+        if (dados.status !== "Pronto") {
+            item.classList.add("erro");
+            status.textContent = "Erro";
+            acoes.textContent = dados.erro || "Não foi possível comprimir.";
+            return true;
+        }
+
+        const extra = dados.extra || {};
+        totalVideo.videos++;
+        totalVideo.antes += extra.antes || 0;
+        totalVideo.depois += extra.depois || extra.antes || 0;
+        if (dados.pasta) totalVideo.pasta = dados.pasta;
+        atualizarResumoVideo();
+
+        if (extra.ja_otimizada) {
+            item.classList.add("otimizada");
+            status.textContent = "Já estava bom";
+            barra.style.width = "100%";
+            acoes.textContent = `${formatarTamanho(extra.antes)} · já cabe no tamanho ou já está bem comprimido; nada foi salvo.`;
+            return true;
+        }
+        // A barra mostra o tamanho novo em relação ao original
+        const economia = Math.round((1 - extra.depois / extra.antes) * 100);
+        item.classList.add("pronto");
+        status.textContent = `−${economia}%`;
+        barra.style.width = `${Math.max(2, 100 - economia)}%`;
+        mostrarSalvo(acoes, dados,
+            `${formatarTamanho(extra.antes)} → ${formatarTamanho(extra.depois)} · ${extra.largura}×${extra.altura}`);
+        return true;
+    });
+}
+
+function atualizarResumoVideo() {
+    const { videos, antes, depois } = totalVideo;
+    const economia = antes ? Math.round((1 - depois / antes) * 100) : 0;
+    resumoVideo.textContent = `${videos} ${videos === 1 ? "vídeo" : "vídeos"} · `
+        + `economizou ${formatarTamanho(antes - depois)} (−${economia}%) · salvos em ${totalVideo.pasta || "Downloads"}`;
 }
 
 // ==========================================
