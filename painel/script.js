@@ -83,6 +83,7 @@ function marcados() {
 
 // O botão principal mostra quantos vídeos vão ser baixados
 function atualizarBotaoBaixar() {
+    if (modoVarios) return atualizarVariosLinks();
     if (!playlistAtual) {
         botaoBaixar.textContent = "Baixar agora";
         botaoBaixar.disabled = analisarLink(campoUrl.value).tipo === "video-na-playlist";
@@ -217,6 +218,113 @@ async function baixarPlaylist() {
 
     campoUrl.value = "";
     aoMudarLink();
+}
+
+// ==========================================
+// VÁRIOS LINKS DE UMA VEZ
+// ==========================================
+const campoVarios = document.getElementById("varios-links");
+const botaoModoVarios = document.getElementById("modo-varios");
+const linksEncontrados = document.getElementById("links-encontrados");
+const LIMITE_LINKS = 200;
+let modoVarios = false;
+
+// Acha os links no texto (um por linha, separados por espaço ou no meio de outro texto), sem repetir.
+// O mesmo vídeo do YouTube escrito de jeitos diferentes (watch?v=, youtu.be/, shorts/) conta uma vez.
+function extrairLinks(texto) {
+    const achados = (texto.match(/https?:\/\/[^\s<>"']+/gi) || []).map((link) => link.replace(/[),.;]+$/, ""));
+    const vistos = new Set();
+    return achados.filter((link) => {
+        const analise = analisarLink(link);
+        // Vídeo dentro de playlist conta pelo vídeo; playlist inteira, pelo link
+        const chave = analise.tipo === "playlist" ? link : idDoYoutube(analise.linkLimpo || link) || link;
+        if (vistos.has(chave)) return false;
+        vistos.add(chave);
+        return true;
+    }).slice(0, LIMITE_LINKS);
+}
+
+function trocarModo(varios, texto = "") {
+    modoVarios = varios;
+    campoUrl.classList.toggle("escondido", varios);
+    campoVarios.classList.toggle("escondido", !varios);
+    // O campo escondido não pode ser obrigatório, senão o formulário não envia
+    campoUrl.required = !varios;
+    botaoModoVarios.textContent = varios ? "← Voltar para um link só" : "+ Colar vários links de uma vez";
+    if (varios) {
+        campoVarios.value = texto || campoUrl.value.trim();
+        campoUrl.value = "";
+        aoMudarLink(); // fecha prévia, playlist e aviso do link único
+        campoVarios.focus();
+    } else {
+        const links = extrairLinks(campoVarios.value);
+        campoVarios.value = "";
+        campoUrl.value = links[0] || "";
+        aoMudarLink();
+        campoUrl.focus();
+    }
+    blocoCortar.classList.toggle("escondido", varios); // cortar trecho vale para um vídeo só
+    atualizarVariosLinks();
+}
+
+function atualizarVariosLinks() {
+    if (!modoVarios) {
+        linksEncontrados.textContent = "";
+        return;
+    }
+    const quantos = extrairLinks(campoVarios.value).length;
+    linksEncontrados.textContent = quantos === 0 ? "Nenhum link ainda"
+        : quantos === 1 ? "1 link encontrado"
+        : `${quantos} links encontrados${quantos === LIMITE_LINKS ? ` (limite de ${LIMITE_LINKS})` : ""}`;
+    botaoBaixar.textContent = quantos === 1 ? "Baixar 1 link" : `Baixar ${quantos} links`;
+    botaoBaixar.disabled = quantos === 0;
+}
+
+botaoModoVarios.addEventListener("click", () => trocarModo(!modoVarios));
+campoVarios.addEventListener("input", atualizarVariosLinks);
+
+// Colou vários links no campo de um link só: muda para o modo de vários sozinho
+// (o campo de uma linha juntaria todos num link só, inválido)
+campoUrl.addEventListener("paste", (evento) => {
+    const texto = evento.clipboardData?.getData("text") || "";
+    if (extrairLinks(texto).length < 2) return;
+    evento.preventDefault();
+    trocarModo(true, texto.trim());
+});
+
+// Põe cada link na fila, na ordem em que foram colados
+async function baixarVariosLinks() {
+    const links = extrairLinks(campoVarios.value);
+    const descricao = formatoEscolhido === "mp3" ? "MP3" : `MP4 ${qualidadeEscolhida}`;
+    botaoBaixar.disabled = true;
+    botaoBaixar.textContent = "Colocando na fila...";
+
+    const lote = document.createDocumentFragment();
+    for (const link of links) {
+        const analise = analisarLink(link);
+        // Até o download terminar, o item mostra o link (o título vem quando fica pronto)
+        const nome = link.replace(/^https?:\/\/(www\.)?/, "");
+        if (analise.tipo === "playlist") {
+            const item = criarItem(null, descricao, nome, { inserir: false });
+            marcarErro(item, "É o link de uma playlist: cole ele sozinho para escolher os vídeos.");
+            lote.appendChild(item);
+            continue;
+        }
+        const resposta = await fetch("/api/download", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            // Vídeo dentro de playlist: baixa só o vídeo
+            body: JSON.stringify({ url: analise.linkLimpo || link, formato: formatoEscolhido, qualidade: qualidadeEscolhida }),
+        }).catch(() => null);
+        const resultado = resposta ? await resposta.json().catch(() => ({})) : {};
+        const item = criarItem(resultado.id, descricao, nome, { inserir: false });
+        if (!resposta || !resposta.ok) marcarErro(item, resultado.erro || "Não foi possível colocar na fila.");
+        lote.appendChild(item);
+    }
+    document.getElementById("lista-downloads").prepend(lote);
+
+    campoVarios.value = "";
+    atualizarVariosLinks();
 }
 
 // Vídeo aberto dentro de uma playlist: "https://youtube.com/watch?v=X&list=Y" -> link só da playlist
@@ -446,6 +554,10 @@ function trechoEscolhido() {
 // Envia o link para a fila
 document.getElementById("form-download").addEventListener("submit", async (evento) => {
     evento.preventDefault();
+    if (modoVarios) {
+        baixarVariosLinks();
+        return;
+    }
     if (playlistAtual) {
         if (playlistAtual.dados) baixarPlaylist();
         return;

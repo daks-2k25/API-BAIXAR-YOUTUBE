@@ -31,6 +31,7 @@ No primeiro clique ele também cria o atalho **Puxaí**, com a logo, na **Área 
 - **Até 3 downloads ao mesmo tempo**, com acompanhamento de progresso
 - **Nova tentativa automática** quando o YouTube falha momentaneamente
 - **Playlists e canais**: cole o link e aparece a lista de vídeos (até 200) com caixinhas para marcar quais baixar. Os arquivos podem ir para uma pasta com o nome da playlist, numerados na ordem (`01 - Título`), bom para álbuns. Se o link for de um vídeo aberto dentro de uma playlist, o painel pergunta: **Usar só este vídeo** ou **Baixar a playlist**
+- **Vários links de uma vez**: cole uma lista de links (até 200) e todos entram na fila, na ordem
 - **Cancelar todos**: com 2 ou mais downloads em andamento, um botão cancela todos de uma vez
 - **Salva direto na pasta Downloads**, com o **título do vídeo** no nome (sem sobrescrever arquivos que já existem)
 - **Cortar um trecho**: baixa só o pedaço escolhido (ex.: de 1:20 a 2:05), cortado no segundo exato
@@ -43,6 +44,7 @@ No primeiro clique ele também cria o atalho **Puxaí**, com a logo, na **Área 
 ## Usando o programa
 
 - **Baixar:** cole o link do YouTube, TikTok ou Instagram e confira a prévia do vídeo (no YouTube, clique na miniatura para assistir ali mesmo). Escolha MP4 ou MP3 e a resolução, e clique em **Baixar agora**. O arquivo é salvo na sua pasta **Downloads**; o botão **Mostrar na pasta** abre o Explorador com ele selecionado.
+- **Vários links:** cole vários links de uma vez no campo (o painel percebe e abre uma caixa com um link por linha) ou clique em **+ Colar vários links de uma vez**. Os links podem estar um por linha, separados por espaço ou no meio de outro texto; repetidos contam uma vez só (inclusive o mesmo vídeo do YouTube escrito de jeitos diferentes). O formato e a qualidade escolhidos valem para todos. Vídeo aberto dentro de uma playlist baixa só o vídeo; o link de uma playlist inteira precisa ser colado sozinho, para escolher os vídeos.
 - **Cortar trecho:** clique em **✂ Cortar trecho** e preencha o início e o fim (ex.: `1:20` e `2:05`). Deixe o fim vazio para ir até o final do vídeo.
 - **Cancelar:** cada download tem um botão **✕ Cancelar** enquanto está na fila ou baixando.
 - **Converter foto:** escolha **JPG** (a partir de HEIC) ou **WebP** (a partir de HEIC, JPG ou PNG), depois arraste uma ou várias fotos (ou clique para escolher). Elas são convertidas uma de cada vez, cada uma aparece na lista com o resultado, e as convertidas vão para a pasta Downloads. Se uma foto não for aceita (ex.: PNG para JPG), só ela mostra o erro e as outras continuam.

@@ -98,6 +98,18 @@
             required
           />
 
+          <!-- Vários links de uma vez (aparece no lugar do campo acima) -->
+          <textarea
+            id="varios-links"
+            class="varios-links escondido"
+            rows="6"
+            placeholder="Cole vários links, um por linha..."
+          ></textarea>
+          <div class="linha-modo">
+            <span id="links-encontrados" class="links-encontrados"></span>
+            <button type="button" id="modo-varios" class="botao-texto">+ Colar vários links de uma vez</button>
+          </div>
+
           <!-- Aparece quando o link é de uma playlist (preenchido pelo script.js) -->
           <div id="aviso-playlist" class="aviso escondido">
             <p id="aviso-texto"></p>

@@ -418,7 +418,8 @@ h1 span {
     display: none;
 }
 
-input[type="url"] {
+input[type="url"],
+.varios-links {
     width: 100%;
     padding: 15px 20px;
     border: 1px solid var(--borda-forte);
@@ -430,12 +431,56 @@ input[type="url"] {
     transition: 0.2s;
 }
 
-input[type="url"]::placeholder {
+/* Vários links: um por linha, a caixa cresce para baixo se precisar */
+.varios-links {
+    display: block;
+    min-height: 140px;
+    resize: vertical;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.varios-links.escondido,
+input[type="url"].escondido {
+    display: none;
+}
+
+input[type="url"]::placeholder,
+.varios-links::placeholder {
     color: #aaa29b;
 }
 
-input[type="url"]:focus {
+input[type="url"]:focus,
+.varios-links:focus {
     border-color: var(--destaque);
+}
+
+.linha-modo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    font-size: 13px;
+}
+
+.links-encontrados {
+    color: var(--texto-suave);
+}
+
+/* Botão com cara de link ("+ Colar vários links de uma vez") */
+.botao-texto {
+    margin-left: auto;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--destaque);
+    font: inherit;
+    cursor: pointer;
+}
+
+.botao-texto:hover {
+    text-decoration: underline;
 }
 
 /* ==========================================
