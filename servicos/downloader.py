@@ -173,8 +173,17 @@ def processar(tarefa):
                         fim_texto = formatar_tempo(fim) if fim != float("inf") else "fim"
                         nome += f" (trecho {formatar_tempo(inicio)} a {fim_texto})"
 
+                    # Playlist: pasta com o nome dela e o número na frente ("03 - Título"),
+                    # para os arquivos ficarem na ordem da playlist
+                    pasta = PASTA_DESTINO
+                    if tarefa.get("pasta"):
+                        pasta = os.path.join(PASTA_DESTINO, tarefa["pasta"])
+                        os.makedirs(pasta, exist_ok=True)
+                    if tarefa.get("numero"):
+                        nome = f"{tarefa['numero']} - {nome}"
+
                     # Move para a pasta Downloads do usuário, com o título no nome
-                    destino = caminho_sem_sobrescrever(PASTA_DESTINO, nome, extensao)
+                    destino = caminho_sem_sobrescrever(pasta, nome, extensao)
                     shutil.move(caminho_temporario, destino)
 
                     titulos_download[id_download] = titulo
@@ -212,9 +221,11 @@ for _ in range(DOWNLOADS_SIMULTANEOS):
     threading.Thread(target=worker_fila, daemon=True).start()
 
 
-def adicionar_fila(url, formato, qualidade, id_download, trecho=None):
+def adicionar_fila(url, formato, qualidade, id_download, trecho=None, pasta=None, numero=None):
     """Adiciona um novo pedido na fila e define o status inicial.
-    trecho: (inicio, fim) em segundos, para baixar só um pedaço do vídeo."""
+    trecho: (inicio, fim) em segundos, para baixar só um pedaço do vídeo.
+    pasta e numero (playlists): subpasta dentro de Downloads e o número que vai
+    na frente do nome, já formatado (ex.: "03")."""
     cancelados.discard(id_download)
     status_download[id_download] = "Na fila..."
     fila_downloads.put({
@@ -223,6 +234,8 @@ def adicionar_fila(url, formato, qualidade, id_download, trecho=None):
         "qualidade": qualidade,
         "trecho": trecho,
         "id_download": id_download,
+        "pasta": pasta,
+        "numero": numero,
     })
 
 

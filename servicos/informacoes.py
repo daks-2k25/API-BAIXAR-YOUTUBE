@@ -33,24 +33,116 @@ def obter_informacoes(url):
         'no_warnings': True,
         'noplaylist': True,  # Vídeo dentro de playlist: pega só o vídeo
         'skip_download': True,
+        # Link de playlist/canal: só lista os vídeos, sem abrir um por um
+        'extract_flat': 'in_playlist',
+        'playlistend': 1,
         **opcoes_de_login(),
     }
     with yt_dlp.YoutubeDL(opcoes) as ydl:
         info = ydl.extract_info(url, download=False)
 
-    resultado = {
-        "id": info.get("id"),
-        "titulo": titulo_amigavel(info),
-        "canal": info.get("channel") or info.get("uploader"),
-        "site": nome_do_site(info),  # YouTube, TikTok ou Instagram
-        "duracao": formatar_duracao(info.get("duration")),
-        "miniatura": info.get("thumbnail"),
-        # Só vídeos do YouTube podem ser assistidos dentro do painel
-        "youtube": info.get("extractor_key") == "Youtube",
-    }
+    if info.get("_type") == "playlist":
+        # Canal, álbum, playlist sem "list=" no link...: o painel abre a lista de vídeos
+        resultado = {"playlist": True, "titulo": info.get("title")}
+    else:
+        resultado = {
+            "id": info.get("id"),
+            "titulo": titulo_amigavel(info),
+            "canal": info.get("channel") or info.get("uploader"),
+            "site": nome_do_site(info),  # YouTube, TikTok ou Instagram
+            "duracao": formatar_duracao(info.get("duration")),
+            "miniatura": info.get("thumbnail"),
+            # Só vídeos do YouTube podem ser assistidos dentro do painel
+            "youtube": info.get("extractor_key") == "Youtube",
+        }
 
+    _guardar(cache_informacoes, url, resultado)
+    return resultado
+
+
+def _guardar(cache, chave, valor):
     with trava:
-        if len(cache_informacoes) >= LIMITE_CACHE:
-            cache_informacoes.pop(next(iter(cache_informacoes)))
-        cache_informacoes[url] = resultado
+        if len(cache) >= LIMITE_CACHE:
+            cache.pop(next(iter(cache)))
+        cache[chave] = valor
+
+
+# ==========================================
+# Playlists (e canais, álbuns...): lista os vídeos para escolher quais baixar
+# ==========================================
+
+# Mais que isso deixaria a lista lenta de carregar e de marcar
+LIMITE_PLAYLIST = 200
+cache_playlists = {}
+
+# Vídeos que aparecem na playlist mas não podem ser baixados
+TITULOS_INDISPONIVEIS = {"[Private video]", "[Deleted video]", "[Unavailable video]"}
+
+
+def _miniatura(entrada):
+    if entrada.get("thumbnail"):
+        return entrada["thumbnail"]
+    miniaturas = entrada.get("thumbnails") or []
+    # A lista vem da menor para a maior; uma média basta para a lista do painel
+    return miniaturas[len(miniaturas) // 2].get("url") if miniaturas else None
+
+
+def obter_playlist(url):
+    """Título, canal e os primeiros LIMITE_PLAYLIST vídeos de uma playlist, sem baixar nada."""
+    with trava:
+        if url in cache_playlists:
+            return cache_playlists[url]
+
+    opcoes = {
+        'quiet': True,
+        'no_warnings': True,
+        'skip_download': True,
+        'extract_flat': 'in_playlist',  # só a lista: rápido mesmo com centenas de vídeos
+        'playlistend': LIMITE_PLAYLIST,
+        **opcoes_de_login(),
+    }
+    with yt_dlp.YoutubeDL(opcoes) as ydl:
+        info = ydl.extract_info(url, download=False)
+
+        # Página inicial de um canal do YouTube: a "playlist" são as abas
+        # (Vídeos, Shorts, Ao vivo). Usa a aba Vídeos.
+        entradas = [e for e in info.get("entries") or [] if e]
+        if entradas and all(e.get("_type") == "playlist" for e in entradas):
+            if info.get("extractor_key") != "YoutubeTab":
+                raise ValueError("Este link tem várias listas dentro. Abra uma playlist específica e cole o link dela.")
+            info = ydl.extract_info(info.get("webpage_url", url).rstrip("/") + "/videos", download=False)
+
+    if info.get("_type") != "playlist":
+        raise ValueError("Este link não é de uma playlist.")
+
+    itens = []
+    for numero, entrada in enumerate(info.get("entries") or [], start=1):
+        if not entrada:
+            continue
+        link = entrada.get("url") or entrada.get("webpage_url") or ""
+        titulo = entrada.get("title") or ""
+        disponivel = (
+            link.startswith("http")
+            and titulo not in TITULOS_INDISPONIVEIS
+            and entrada.get("availability") not in ("private", "needs_auth", "subscriber_only", "premium_only")
+        )
+        itens.append({
+            "numero": numero,
+            "url": link,
+            "titulo": titulo or f"Vídeo {numero}",
+            "duracao": formatar_duracao(entrada.get("duration")),
+            "miniatura": _miniatura(entrada),
+            "disponivel": disponivel,
+        })
+
+    total = info.get("playlist_count") or len(itens)
+    resultado = {
+        "titulo": info.get("title") or "Playlist",
+        "canal": info.get("channel") or info.get("uploader"),
+        "site": nome_do_site(info),
+        "total": max(total, len(itens)),
+        "limite": LIMITE_PLAYLIST,
+        "itens": itens,
+    }
+    _guardar(cache_playlists, url, resultado)
     return resultado

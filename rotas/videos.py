@@ -6,9 +6,10 @@ import uuid
 from flask import Blueprint, jsonify, request, send_file
 
 from servicos.downloader import (
-    adicionar_fila, arquivos_salvos, cancelar_download, erros_download, status_download, titulos_download,
+    adicionar_fila, arquivos_salvos, cancelar_download, erros_download, nome_de_arquivo_seguro,
+    status_download, titulos_download,
 )
-from servicos.informacoes import obter_informacoes
+from servicos.informacoes import obter_informacoes, obter_playlist
 from servicos.sites import e_playlist_sem_video, mensagem_de_erro
 
 rotas = Blueprint("videos", __name__)
@@ -82,7 +83,20 @@ def download_api():
             return jsonify({"erro": "O fim do trecho precisa ser depois do início."}), 400
         trecho = (inicio, fim)
 
-    adicionar_fila(url, formato, qualidade, id_download, trecho)
+    # Playlist (opcional): subpasta com o nome dela e o número do vídeo na frente do nome
+    pasta = dados.get('pasta')
+    if pasta:
+        # Sem caracteres proibidos nem "." no começo/fim: a pasta fica sempre dentro de Downloads
+        pasta = nome_de_arquivo_seguro(pasta)[:100].strip(" .") or None
+    numero = None
+    try:
+        if dados.get('numero') is not None:
+            total = max(int(dados.get('total') or 0), int(dados['numero']))
+            numero = str(int(dados['numero'])).zfill(max(2, len(str(total))))  # 3 de 40 -> "03"
+    except (TypeError, ValueError):
+        return jsonify({"erro": "Número do vídeo na playlist inválido."}), 400
+
+    adicionar_fila(url, formato, qualidade, id_download, trecho, pasta, numero)
 
     return jsonify({
         "mensagem": "Vídeo enfileirado com sucesso!",
@@ -112,6 +126,22 @@ def info_api():
         return jsonify({"erro": mensagem_de_erro(e)}), 404
 
 
+@rotas.route('/api/playlist', methods=['GET'])
+def playlist_api():
+    # Lista os vídeos de uma playlist (ou canal) para o painel marcar quais baixar
+    url = request.args.get('url', '').strip()
+    if not url:
+        return jsonify({"erro": "Informe a URL da playlist."}), 400
+
+    try:
+        return jsonify(obter_playlist(url))
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
+    except Exception as e:
+        print(f"[PLAYLIST] Não foi possível listar {url}: {e}")
+        return jsonify({"erro": mensagem_de_erro(e)}), 404
+
+
 @rotas.route('/api/qualidades', methods=['GET'])
 def qualidades_api():
     # Para o frontend montar a lista de opções
@@ -121,17 +151,30 @@ def qualidades_api():
     })
 
 
-@rotas.route('/api/progresso/<id_download>', methods=['GET'])
-def progresso_api(id_download):
+def progresso(id_download):
     status = status_download.get(id_download, "Desconhecido")
     caminho = arquivos_salvos.get(id_download)
-    return jsonify({
+    return {
         "id": id_download,
         "status": status,
         "titulo": titulos_download.get(id_download),
         "arquivo": os.path.basename(caminho) if caminho else None,  # nome do arquivo na pasta Downloads
         "erro": erros_download.get(id_download) if status == "Erro" else None,  # motivo da falha
-    })
+    }
+
+
+@rotas.route('/api/progresso/<id_download>', methods=['GET'])
+def progresso_api(id_download):
+    return jsonify(progresso(id_download))
+
+
+@rotas.route('/api/progresso', methods=['POST'])
+def progresso_lote_api():
+    # O painel pergunta de todos os downloads de uma vez (playlists têm até 200)
+    ids = (request.get_json(silent=True) or {}).get("ids")
+    if not isinstance(ids, list):
+        return jsonify({"erro": "Envie {\"ids\": [...]}."}), 400
+    return jsonify({str(i): progresso(str(i)) for i in ids[:500]})
 
 
 @rotas.route('/api/cancelar/<id_download>', methods=['POST'])

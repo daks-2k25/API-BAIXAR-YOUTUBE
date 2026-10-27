@@ -491,6 +491,11 @@ input[type="url"]:focus {
     margin-bottom: 16px;
 }
 
+/* Playlist: cortar trecho não vale para vários vídeos */
+.cortar.escondido {
+    display: none;
+}
+
 .campos-trecho {
     display: flex;
     align-items: center;
@@ -604,6 +609,141 @@ input[type="url"]:focus {
 
 .aviso-botao:hover {
     background: #fffaf0;
+}
+
+.aviso-botoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* ==========================================
+   Playlist: lista de vídeos para marcar
+   ========================================== */
+.playlist {
+    margin-top: 12px;
+    padding: 14px;
+    border: 1px solid var(--borda);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.playlist.escondido {
+    display: none;
+}
+
+.playlist.carregando .previa-titulo {
+    animation: pulsar 1.2s ease-in-out infinite;
+}
+
+.playlist-controles {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 0 8px;
+    color: var(--texto-suave);
+    font-size: 13px;
+}
+
+.playlist-controles label,
+.playlist-pasta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--texto);
+    cursor: pointer;
+}
+
+.playlist input[type="checkbox"] {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--destaque);
+    cursor: pointer;
+}
+
+.playlist-itens {
+    list-style: none;
+    max-height: 340px;
+    overflow-y: auto;
+    border-top: 1px solid var(--borda);
+    border-bottom: 1px solid var(--borda);
+}
+
+.playlist-item label {
+    display: grid;
+    grid-template-columns: 16px 26px 64px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 4px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.playlist-item + .playlist-item {
+    border-top: 1px solid var(--borda);
+}
+
+.playlist-item label:hover {
+    background: var(--destaque-fundo);
+}
+
+.playlist-numero,
+.playlist-duracao {
+    color: var(--texto-suave);
+    font-size: 12px;
+    text-align: right;
+}
+
+.playlist-item img {
+    width: 64px;
+    aspect-ratio: 16 / 9;
+    border-radius: 2px;
+    object-fit: cover;
+    background: rgba(28, 25, 23, 0.06);
+}
+
+.playlist-nome {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* Vídeo privado ou apagado: aparece, mas não dá para marcar */
+.playlist-item.indisponivel label {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.playlist-pasta {
+    margin-top: 10px;
+    font-size: 13px;
+}
+
+/* "3 downloads em andamento · Cancelar todos" */
+.downloads-topo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-top: 18px;
+    color: var(--texto-suave);
+    font-size: 13px;
+}
+
+.downloads-topo.escondido {
+    display: none;
+}
+
+@media (max-width: 480px) {
+    .playlist-item label {
+        grid-template-columns: 16px 22px minmax(0, 1fr) auto;
+    }
+
+    .playlist-item img {
+        display: none;
+    }
 }
 
 /* ==========================================

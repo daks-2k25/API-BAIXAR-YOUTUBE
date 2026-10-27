@@ -55,13 +55,175 @@ async function carregarQualidades() {
 }
 
 // ==========================================
-// AVISO DE PLAYLIST
+// PLAYLISTS: escolher quais vídeos baixar
 // ==========================================
 const campoUrl = document.getElementById("url");
 const botaoBaixar = document.querySelector("#form-download .botao");
 const avisoPlaylist = document.getElementById("aviso-playlist");
 const avisoTexto = document.getElementById("aviso-texto");
 const botaoUsarSoVideo = document.getElementById("usar-so-video");
+const botaoVerPlaylist = document.getElementById("ver-playlist");
+const painelPlaylist = document.getElementById("playlist");
+const playlistTitulo = document.getElementById("playlist-titulo");
+const playlistInfo = document.getElementById("playlist-info");
+const playlistCorpo = document.getElementById("playlist-corpo");
+const playlistItens = document.getElementById("playlist-itens");
+const playlistTodos = document.getElementById("playlist-todos");
+const playlistContagem = document.getElementById("playlist-contagem");
+const playlistPasta = document.getElementById("playlist-pasta");
+const blocoCortar = document.getElementById("cortar");
+
+// Playlist aberta no painel: { url, dados } (dados = resposta de /api/playlist, ou null carregando)
+let playlistAtual = null;
+let consultaPlaylist = null;
+
+function marcados() {
+    return [...playlistItens.querySelectorAll("input:checked")].map((c) => playlistAtual.dados.itens[c.dataset.indice]);
+}
+
+// O botão principal mostra quantos vídeos vão ser baixados
+function atualizarBotaoBaixar() {
+    if (!playlistAtual) {
+        botaoBaixar.textContent = "Baixar agora";
+        botaoBaixar.disabled = analisarLink(campoUrl.value).tipo === "video-na-playlist";
+        return;
+    }
+    const quantos = playlistAtual.dados ? marcados().length : 0;
+    botaoBaixar.textContent = quantos === 1 ? "Baixar 1 vídeo" : `Baixar ${quantos} vídeos`;
+    botaoBaixar.disabled = quantos === 0;
+    if (playlistAtual.dados) {
+        const disponiveis = playlistAtual.dados.itens.filter((i) => i.disponivel).length;
+        playlistContagem.textContent = `${quantos} de ${disponiveis} marcados`;
+        playlistTodos.checked = quantos === disponiveis;
+        playlistTodos.indeterminate = quantos > 0 && quantos < disponiveis;
+    }
+}
+
+function fecharPlaylist() {
+    if (!playlistAtual) return;
+    playlistAtual = null;
+    consultaPlaylist?.abort();
+    playlistItens.replaceChildren();
+    painelPlaylist.classList.add("escondido");
+    blocoCortar.classList.remove("escondido");
+    atualizarBotaoBaixar();
+}
+
+function abrirPlaylist(url) {
+    if (playlistAtual?.url === url) return;
+    playlistAtual = { url, dados: null };
+    esconderPrevia();
+    painelPlaylist.classList.remove("escondido");
+    painelPlaylist.classList.add("carregando");
+    playlistCorpo.classList.add("escondido");
+    playlistItens.replaceChildren(); // não mostra a lista anterior enquanto carrega
+    blocoCortar.classList.add("escondido"); // cortar trecho vale para um vídeo só
+    playlistTitulo.textContent = "Carregando a playlist...";
+    playlistInfo.textContent = "";
+    atualizarBotaoBaixar();
+
+    consultaPlaylist?.abort();
+    consultaPlaylist = new AbortController();
+    const pedido = playlistAtual;
+    fetch(`/api/playlist?url=${encodeURIComponent(url)}`, { signal: consultaPlaylist.signal })
+        .then(async (resposta) => {
+            const dados = await resposta.json();
+            if (playlistAtual !== pedido) return; // o link mudou nesse meio-tempo
+            painelPlaylist.classList.remove("carregando");
+            if (!resposta.ok) {
+                playlistTitulo.textContent = dados.erro;
+                return;
+            }
+            pedido.dados = dados;
+            mostrarPlaylist(dados);
+        })
+        .catch(() => {});
+}
+
+function mostrarPlaylist(dados) {
+    playlistTitulo.textContent = dados.titulo;
+    // Canais nem sempre dizem o total: se chegou no limite, pode haver mais
+    const quantos = dados.itens.length;
+    const quantidade = dados.total > quantos
+        ? `mostrando os primeiros ${quantos} de ${dados.total} vídeos (limite de ${dados.limite})`
+        : quantos >= dados.limite
+            ? `mostrando os primeiros ${quantos} vídeos (limite de ${dados.limite})`
+            : `${quantos} ${quantos === 1 ? "vídeo" : "vídeos"}`;
+    playlistInfo.textContent = [dados.canal, dados.site, quantidade].filter(Boolean).join(" · ");
+
+    playlistItens.replaceChildren();
+    dados.itens.forEach((video, indice) => {
+        const linha = document.createElement("li");
+        linha.className = "playlist-item" + (video.disponivel ? "" : " indisponivel");
+        linha.innerHTML = `
+            <label>
+                <input type="checkbox" />
+                <span class="playlist-numero"></span>
+                <img alt="" loading="lazy" />
+                <span class="playlist-nome"></span>
+                <span class="playlist-duracao"></span>
+            </label>
+        `;
+        const caixa = linha.querySelector("input");
+        caixa.dataset.indice = indice;
+        caixa.checked = video.disponivel;
+        caixa.disabled = !video.disponivel;
+        caixa.addEventListener("change", atualizarBotaoBaixar);
+        linha.querySelector(".playlist-numero").textContent = video.numero;
+        // textContent (e não innerHTML): o título vem do site e pode ter qualquer caractere
+        linha.querySelector(".playlist-nome").textContent = video.titulo;
+        linha.querySelector(".playlist-duracao").textContent = video.disponivel ? video.duracao || "" : "indisponível";
+        const miniatura = linha.querySelector("img");
+        if (video.miniatura) miniatura.src = video.miniatura;
+        else miniatura.hidden = true;
+        miniatura.addEventListener("error", () => (miniatura.style.visibility = "hidden"));
+        playlistItens.appendChild(linha);
+    });
+    playlistCorpo.classList.remove("escondido");
+    atualizarBotaoBaixar();
+}
+
+playlistTodos.addEventListener("change", () => {
+    playlistItens.querySelectorAll("input:not(:disabled)").forEach((c) => (c.checked = playlistTodos.checked));
+    atualizarBotaoBaixar();
+});
+
+// Põe cada vídeo marcado na fila, na ordem da playlist
+async function baixarPlaylist() {
+    const { dados } = playlistAtual;
+    const videos = marcados();
+    const pasta = playlistPasta.checked ? dados.titulo : null;
+    const descricao = formatoEscolhido === "mp3" ? "MP3" : `MP4 ${qualidadeEscolhida}`;
+    botaoBaixar.disabled = true;
+    botaoBaixar.textContent = "Colocando na fila...";
+
+    const lote = document.createDocumentFragment();
+    for (const video of videos) {
+        const pedido = {
+            url: video.url, formato: formatoEscolhido, qualidade: qualidadeEscolhida,
+            ...(pasta ? { pasta, numero: video.numero, total: dados.total } : {}),
+        };
+        const resposta = await fetch("/api/download", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(pedido),
+        }).catch(() => null);
+        const resultado = resposta ? await resposta.json().catch(() => ({})) : {};
+        const item = criarItem(resultado.id, descricao, video.titulo, { pasta, inserir: false });
+        if (!resposta || !resposta.ok) marcarErro(item, resultado.erro || "Não foi possível colocar na fila.");
+        lote.appendChild(item);
+    }
+    document.getElementById("lista-downloads").prepend(lote);
+
+    campoUrl.value = "";
+    aoMudarLink();
+}
+
+// Vídeo aberto dentro de uma playlist: "https://youtube.com/watch?v=X&list=Y" -> link só da playlist
+function linkDaPlaylist(texto) {
+    const lista = new URL(texto.trim()).searchParams.get("list");
+    return `https://www.youtube.com/playlist?list=${encodeURIComponent(lista)}`;
+}
 
 // Diz se o link é de uma playlist inteira, de um vídeo dentro de uma playlist
 // ou de um vídeo comum. Para o vídeo dentro da playlist, devolve o link limpo.
@@ -87,24 +249,26 @@ function analisarLink(texto) {
 
 function atualizarAvisoPlaylist() {
     const analise = analisarLink(campoUrl.value);
-    const bloquear = analise.tipo !== "comum";
 
-    avisoPlaylist.classList.toggle("escondido", !bloquear);
-    botaoBaixar.disabled = bloquear;
+    // Link de playlist: abre a lista para escolher os vídeos
+    if (analise.tipo === "playlist") abrirPlaylist(campoUrl.value.trim());
+    // Outro link: fecha a lista (exceto se ela foi aberta pela prévia, ex.: link de canal)
+    else if (playlistAtual?.url !== campoUrl.value.trim()) fecharPlaylist();
 
-    if (analise.tipo === "playlist") {
-        avisoTexto.textContent =
-            "⚠ Este link é de uma playlist. Playlists não podem ser baixadas: abra um vídeo da playlist e cole o link dele.";
-        botaoUsarSoVideo.classList.add("escondido");
-    }
+    // Vídeo dentro de uma playlist: pergunta se é o vídeo ou a playlist
+    avisoPlaylist.classList.toggle("escondido", analise.tipo !== "video-na-playlist");
     if (analise.tipo === "video-na-playlist") {
-        avisoTexto.textContent = "⚠ Este vídeo faz parte de uma playlist. Só é possível baixar o vídeo, não a playlist inteira.";
-        botaoUsarSoVideo.classList.remove("escondido");
+        avisoTexto.textContent = "Este vídeo faz parte de uma playlist. O que você quer baixar?";
         botaoUsarSoVideo.onclick = () => {
             campoUrl.value = analise.linkLimpo;
             aoMudarLink();
         };
+        botaoVerPlaylist.onclick = () => {
+            campoUrl.value = linkDaPlaylist(campoUrl.value);
+            aoMudarLink();
+        };
     }
+    atualizarBotaoBaixar();
 }
 
 // ==========================================
@@ -153,7 +317,7 @@ function mostrarMiniatura(endereco) {
 function atualizarPrevia() {
     const texto = campoUrl.value.trim();
     const tipo = analisarLink(texto).tipo;
-    if (!texto || tipo === "playlist") {
+    if (!texto || tipo === "playlist" || playlistAtual?.url === texto) {
         esconderPrevia();
         return;
     }
@@ -181,6 +345,12 @@ function atualizarPrevia() {
             const dados = await resposta.json();
             if (previaAtual !== consultaDestePedido) return; // o link mudou nesse meio-tempo
             previa.classList.remove("carregando");
+
+            // Link de canal, álbum...: na verdade é uma lista de vídeos
+            if (resposta.ok && dados.playlist) {
+                abrirPlaylist(texto);
+                return;
+            }
 
             if (!resposta.ok) {
                 previa.classList.add("nao-encontrado");
@@ -276,6 +446,10 @@ function trechoEscolhido() {
 // Envia o link para a fila
 document.getElementById("form-download").addEventListener("submit", async (evento) => {
     evento.preventDefault();
+    if (playlistAtual) {
+        if (playlistAtual.dados) baixarPlaylist();
+        return;
+    }
     if (analisarLink(campoUrl.value).tipo !== "comum") return;
 
     const trecho = trechoEscolhido();
@@ -305,8 +479,55 @@ document.getElementById("form-download").addEventListener("submit", async (event
     }
 });
 
-// Cria um item na lista e acompanha o progresso dele
-function criarItem(id, descricao, tituloDaPrevia) {
+// Downloads em andamento: id -> função que atualiza o item na lista.
+// Uma consulta só pergunta o progresso de todos (playlists têm até 200).
+const acompanhando = new Map();
+let consultandoProgresso = false;
+
+setInterval(async () => {
+    if (!acompanhando.size || consultandoProgresso) return;
+    consultandoProgresso = true;
+    try {
+        const resposta = await fetch("/api/progresso", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: [...acompanhando.keys()] }),
+        });
+        const todos = await resposta.json();
+        for (const [id, dados] of Object.entries(todos)) {
+            // A função devolve true quando o download terminou (deu certo ou não)
+            if (acompanhando.get(id)?.(dados)) acompanhando.delete(id);
+        }
+    } catch {
+        // Programa reiniciando ou fechado: tenta de novo na próxima volta
+    } finally {
+        consultandoProgresso = false;
+        atualizarTopoDownloads();
+    }
+}, 700);
+
+// "3 downloads em andamento · ✕ Cancelar todos" (aparece com 2 ou mais)
+const topoDownloads = document.getElementById("downloads-topo");
+function atualizarTopoDownloads() {
+    topoDownloads.classList.toggle("escondido", acompanhando.size < 2);
+    document.getElementById("downloads-contagem").textContent = `${acompanhando.size} downloads em andamento`;
+}
+
+document.getElementById("cancelar-todos").addEventListener("click", async () => {
+    if (!confirm(`Cancelar os ${acompanhando.size} downloads em andamento e na fila?`)) return;
+    await Promise.all([...acompanhando.keys()].map((id) => fetch(`/api/cancelar/${id}`, { method: "POST" }).catch(() => {})));
+});
+
+function marcarErro(item, mensagem) {
+    item.classList.add("erro");
+    item.querySelector(".item-status").textContent = "Erro ao baixar";
+    item.querySelector(".item-acoes").textContent = mensagem || ""; // motivo (ex.: o post exige login)
+}
+
+// Cria um item na lista e acompanha o progresso dele.
+// pasta: subpasta da playlist (só para o texto "Salvo em"); inserir: false
+// quando quem chama coloca o item na lista (lote de uma playlist).
+function criarItem(id, descricao, tituloDaPrevia, { pasta = null, inserir = true } = {}) {
     const item = document.createElement("li");
     item.className = "item";
     item.innerHTML = `
@@ -321,7 +542,8 @@ function criarItem(id, descricao, tituloDaPrevia) {
     `;
     // textContent (e não innerHTML): o título vem do vídeo e pode ter qualquer caractere
     item.querySelector(".item-titulo").textContent = tituloDaPrevia ? `${tituloDaPrevia} (${descricao})` : descricao;
-    document.getElementById("lista-downloads").prepend(item);
+    if (inserir) document.getElementById("lista-downloads").prepend(item);
+    if (!id) return item; // nem entrou na fila (quem chamou marca o erro)
 
     const titulo = item.querySelector(".item-titulo");
     const status = item.querySelector(".item-status");
@@ -335,8 +557,8 @@ function criarItem(id, descricao, tituloDaPrevia) {
         await fetch(`/api/cancelar/${id}`, { method: "POST" }).catch(() => {});
     });
 
-    const intervalo = setInterval(async () => {
-        const dados = await (await fetch(`/api/progresso/${id}`)).json();
+    // Chamada pela consulta única de progresso; devolve true quando terminou
+    acompanhando.set(id, (dados) => {
         status.textContent = dados.status;
 
         // "45.3%" -> barra em 45.3%
@@ -344,35 +566,37 @@ function criarItem(id, descricao, tituloDaPrevia) {
         if (dados.status === "Processando arquivo...") barra.style.width = "100%";
 
         if (dados.status === "Pronto") {
-            clearInterval(intervalo);
             barra.style.width = "100%";
             item.classList.add("pronto");
             titulo.textContent = `${dados.titulo} (${descricao})`;
 
-            // O arquivo já foi salvo na pasta Downloads
-            acoes.innerHTML = `<span>✓ Salvo em Downloads</span>
+            // O arquivo já foi salvo na pasta Downloads (ou na pasta da playlist)
+            acoes.innerHTML = `<span></span>
                 <button type="button" class="item-botao">📂 Mostrar na pasta</button>`;
+            acoes.querySelector("span").textContent = pasta ? `✓ Salvo em Downloads › ${pasta}` : "✓ Salvo em Downloads";
             acoes.querySelector("span").title = dados.arquivo;
             acoes.querySelector("button").addEventListener("click", () => {
                 fetch(`/api/mostrar/${id}`, { method: "POST" })
                     .then((r) => (r.ok ? null : r.json().then((d) => alert(d.erro))))
                     .catch(() => {});
             });
+            return true;
         }
 
         if (dados.status === "Cancelado") {
-            clearInterval(intervalo);
             item.classList.add("cancelado");
             acoes.innerHTML = "";
+            return true;
         }
 
         if (dados.status === "Erro" || dados.status === "Desconhecido") {
-            clearInterval(intervalo);
-            item.classList.add("erro");
-            status.textContent = "Erro ao baixar";
-            acoes.textContent = dados.erro || ""; // motivo (ex.: o post exige login)
+            marcarErro(item, dados.erro);
+            return true;
         }
-    }, 500);
+        return false;
+    });
+    atualizarTopoDownloads();
+    return item;
 }
 
 // ==========================================

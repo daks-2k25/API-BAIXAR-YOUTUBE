@@ -101,13 +101,29 @@
           <!-- Aparece quando o link é de uma playlist (preenchido pelo script.js) -->
           <div id="aviso-playlist" class="aviso escondido">
             <p id="aviso-texto"></p>
-            <button
-              type="button"
-              id="usar-so-video"
-              class="aviso-botao escondido"
-            >
-              Usar só este vídeo
-            </button>
+            <div class="aviso-botoes">
+              <button type="button" id="usar-so-video" class="aviso-botao">Usar só este vídeo</button>
+              <button type="button" id="ver-playlist" class="aviso-botao">Baixar a playlist</button>
+            </div>
+          </div>
+
+          <!-- Playlist: lista de vídeos para marcar quais baixar (preenchida pelo script.js) -->
+          <div id="playlist" class="playlist escondido">
+            <div class="playlist-cabecalho">
+              <p id="playlist-titulo" class="previa-titulo"></p>
+              <p id="playlist-info" class="previa-canal"></p>
+            </div>
+            <div id="playlist-corpo" class="escondido">
+              <div class="playlist-controles">
+                <label><input type="checkbox" id="playlist-todos" checked /> Marcar todos</label>
+                <span id="playlist-contagem"></span>
+              </div>
+              <ul id="playlist-itens" class="playlist-itens"></ul>
+              <label class="playlist-pasta">
+                <input type="checkbox" id="playlist-pasta" checked />
+                Salvar numa pasta com o nome da playlist, numerados na ordem (01, 02...)
+              </label>
+            </div>
           </div>
 
           <!-- Prévia do vídeo: aparece quando um link é colado (preenchida pelo script.js) -->
@@ -142,8 +158,8 @@
             </div>
           </div>
 
-          <!-- Cortar trecho: baixa só um pedaço do vídeo -->
-          <div class="cortar">
+          <!-- Cortar trecho: baixa só um pedaço do vídeo (escondido para playlists) -->
+          <div class="cortar" id="cortar">
             <button type="button" id="botao-cortar" class="chip">
               ✂ Cortar trecho
             </button>
@@ -164,6 +180,11 @@
           <button type="submit" class="botao">Baixar agora</button>
         </form>
 
+        <!-- Aparece com 2 ou mais downloads em andamento -->
+        <div id="downloads-topo" class="downloads-topo escondido">
+          <span id="downloads-contagem"></span>
+          <button type="button" id="cancelar-todos" class="item-botao cancelar">✕ Cancelar todos</button>
+        </div>
         <ul id="lista-downloads"></ul>
       </section>
 

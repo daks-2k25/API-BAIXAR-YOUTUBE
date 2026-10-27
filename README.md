@@ -30,7 +30,8 @@ No primeiro clique ele também cria o atalho **Baixar YouTube**, com a logo, na 
 - Extração de áudio em **MP3** (192 kbps)
 - **Até 3 downloads ao mesmo tempo**, com acompanhamento de progresso
 - **Nova tentativa automática** quando o YouTube falha momentaneamente
-- **Playlists bloqueadas**: o painel avisa quando o link é de uma playlist e não deixa baixar. Se for um vídeo aberto dentro de uma playlist, oferece o botão **Usar só este vídeo**
+- **Playlists e canais**: cole o link e aparece a lista de vídeos (até 200) com caixinhas para marcar quais baixar. Os arquivos podem ir para uma pasta com o nome da playlist, numerados na ordem (`01 - Título`), bom para álbuns. Se o link for de um vídeo aberto dentro de uma playlist, o painel pergunta: **Usar só este vídeo** ou **Baixar a playlist**
+- **Cancelar todos**: com 2 ou mais downloads em andamento, um botão cancela todos de uma vez
 - **Salva direto na pasta Downloads**, com o **título do vídeo** no nome (sem sobrescrever arquivos que já existem)
 - **Cortar um trecho**: baixa só o pedaço escolhido (ex.: de 1:20 a 2:05), cortado no segundo exato
 - **Cancelar** downloads na fila ou em andamento
@@ -162,6 +163,9 @@ Coloca um vídeo na fila de download.
 | `id`        | string | Não         | ID próprio do download: letras, números, `-` e `_`, até 64 caracteres. Se omitido, gera um UUID |
 | `inicio`    | string | Não         | Início do trecho a baixar: `1:20`, `1:02:05` ou segundos |
 | `fim`       | string | Não         | Fim do trecho. Sem `fim`, vai até o final do vídeo |
+| `pasta`     | string | Não         | Subpasta dentro de Downloads (usada nas playlists, com o nome delas) |
+| `numero`    | número | Não         | Posição do vídeo na playlist: vai na frente do nome (`03 - Título`) |
+| `total`     | número | Não         | Tamanho da playlist, para saber quantos zeros usar no número (`03` de 40, `003` de 150) |
 
 O arquivo pronto é salvo na pasta **Downloads** do usuário, com o título do vídeo no nome (e o trecho, se houver).
 
@@ -184,7 +188,7 @@ curl -X POST http://127.0.0.1:5000/api/download \
 }
 ```
 
-**Resposta `400 Bad Request`** quando falta a URL, quando `formato`, `qualidade`, `id` ou o trecho são inválidos, ou quando o link é de uma playlist inteira (`youtube.com/playlist?list=...`). Um vídeo dentro de uma playlist (`watch?v=...&list=...`) é aceito, e só o vídeo é baixado:
+**Resposta `400 Bad Request`** quando falta a URL, quando `formato`, `qualidade`, `id` ou o trecho são inválidos, ou quando o link é de uma playlist inteira (`youtube.com/playlist?list=...`). Para baixar uma playlist, liste os vídeos com `GET /api/playlist` e envie um pedido por vídeo, como faz o painel. Um vídeo dentro de uma playlist (`watch?v=...&list=...`) é aceito, e só o vídeo é baixado:
 
 ```json
 { "erro": "Qualidade inválida. Opções: 360p, 480p, 720p, 1080p." }
@@ -207,7 +211,27 @@ Prévia do vídeo, sem baixar nada. Usada pelo painel ao colar um link.
 }
 ```
 
-Responde `400` para links de playlist e `404` quando o vídeo não é encontrado.
+Responde `400` para links de playlist e `404` quando o vídeo não é encontrado. Se o link for de um canal ou de outra lista de vídeos sem `list=` no endereço, a resposta é `{"playlist": true, "titulo": "..."}`, e o painel abre a lista de vídeos.
+
+### `GET /api/playlist?url=<link>`
+
+Lista os vídeos de uma playlist (ou de um canal) sem baixar nada, até os primeiros 200. Na página inicial de um canal do YouTube, lista a aba **Vídeos**.
+
+```json
+{
+  "titulo": "Python Tutorials",
+  "canal": "Corey Schafer",
+  "site": "YouTube",
+  "total": 158,
+  "limite": 200,
+  "itens": [
+    { "numero": 1, "url": "https://www.youtube.com/watch?v=YYXdXT2l-Gg", "titulo": "Python Tutorial for Beginners 1: ...",
+      "duracao": "15:29", "miniatura": "https://i.ytimg.com/vi/...", "disponivel": true }
+  ]
+}
+```
+
+`disponivel` é `false` para vídeos privados ou apagados. Responde `400` quando o link não é de uma playlist.
 
 ### `GET /api/qualidades`
 
@@ -235,6 +259,10 @@ Retorna o status do download. Quando fica pronto, `titulo` e `arquivo` (nome do 
 | `Erro`                   | Falha no download (depois de 2 tentativas) |
 | `Cancelado`              | Cancelado pelo usuário |
 | `Desconhecido`           | ID não encontrado |
+
+### `POST /api/progresso`
+
+O mesmo que a rota acima, para vários downloads de uma vez (o painel usa esta, para não fazer um pedido por vídeo numa playlist). Corpo: `{"ids": ["id1", "id2"]}` (até 500). A resposta tem um objeto por ID, no mesmo formato de `GET /api/progresso/<id>`.
 
 ### `POST /api/cancelar/<id>`
 
