@@ -7,8 +7,11 @@
 - programa.py     janela ou navegador, preferências, encerrar
 - atualizacao.py  versão nova e botão "Atualizar agora"
 """
-from flask import Flask, send_from_directory
+import os
 
+from flask import Flask, Response
+
+from servicos import preferencias
 from servicos.caminhos import PASTA_PAINEL
 from rotas import arquivos, atualizacao, comprimir_video, fotos, programa, videos
 from rotas.seguranca import proteger
@@ -21,7 +24,14 @@ def criar_app():
 
     @app.route('/')
     def painel():
-        return send_from_directory(PASTA_PAINEL, "index.html")
+        # A página já sai com o tema certo (claro/escuro): sem "piscar" o tema errado ao abrir
+        with open(os.path.join(PASTA_PAINEL, "index.html"), encoding="utf-8") as arquivo:
+            html = arquivo.read()
+        html = html.replace('<html lang="pt-BR">', (
+            f'<html lang="pt-BR" data-tema="{preferencias.tema_em_uso()}" '
+            f'data-tema-escolhido="{preferencias.tema()}">'
+        ), 1)
+        return Response(html, mimetype="text/html")
 
     for modulo in (videos, fotos, comprimir_video, arquivos, programa, atualizacao):
         app.register_blueprint(modulo.rotas)

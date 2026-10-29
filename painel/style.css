@@ -6,7 +6,7 @@
     --fundo: #fff4ea;
     --superficie: rgba(255, 255, 255, 0.78);
     --superficie-forte: rgba(255, 255, 255, 0.94);
-    --campo: rgba(255, 255, 255, 0.9);
+    --campo: var(--claro-90);
     --borda: rgba(28, 25, 23, 0.08);
     --borda-forte: rgba(28, 25, 23, 0.14);
     --texto: #1c1917;
@@ -22,6 +22,66 @@
     --sombra-flutuante: 0 20px 54px rgba(232, 85, 31, 0.24);
     --degrade: linear-gradient(120deg, #e8551f 0%, #f6822b 45%, #ffb23d 100%);
     --serifa: "Fraunces", Georgia, serif;
+
+    /* Superfícies brancas mais ou menos transparentes (chips, itens, prévia...) */
+    --cartao: #fff;
+    --claro-50: rgba(255, 255, 255, 0.5);
+    --claro-60: rgba(255, 255, 255, 0.6);
+    --claro-70: rgba(255, 255, 255, 0.7);
+    --claro-80: rgba(255, 255, 255, 0.8);
+    --claro-85: rgba(255, 255, 255, 0.85);
+    --claro-90: rgba(255, 255, 255, 0.9);
+    --texto-medio: #6d6259;
+    --texto-fraco: #aaa29b;
+    --aviso-fundo: #fff6e3;
+    --aviso-fundo-forte: #fffaf0;
+    --erro-fundo: #fdecec;
+    --midia-fundo: #ece7e2;
+    /* Brilho de pôr do sol no fundo da página */
+    --brilho-1: rgba(232, 85, 31, 0.7);
+    --brilho-2: rgba(255, 178, 61, 0.6);
+    --brilho-3: rgba(255, 140, 90, 0.35);
+}
+
+/* ==========================================
+   Tema escuro: marrom bem escuro e quente, com o mesmo pôr do sol
+   (data-tema="escuro" vem do programa, que já sabe se o Windows está
+   no modo escuro; o painel troca na hora em Configurações)
+   ========================================== */
+:root[data-tema="escuro"] {
+    color-scheme: dark;
+    --fundo: #150f0c;
+    --superficie: rgba(40, 29, 23, 0.82);
+    --superficie-forte: rgba(44, 32, 25, 0.97);
+    --campo: #1d1612;
+    --borda: rgba(255, 236, 222, 0.09);
+    --borda-forte: rgba(255, 236, 222, 0.17);
+    --texto: #f6ece4;
+    --texto-suave: #ae9f94;
+    --escuro: #f6ece4;
+    --destaque: #ff6a2b;
+    --destaque-fundo: rgba(255, 106, 43, 0.14);
+    --erro: #ff7a70;
+    --ok: #4fd18b;
+    --aviso: #f2b544;
+    --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 44px rgba(0, 0, 0, 0.35);
+    --sombra-flutuante: 0 20px 54px rgba(0, 0, 0, 0.55);
+    --cartao: #2a1f19;
+    --claro-50: rgba(255, 240, 230, 0.03);
+    --claro-60: rgba(255, 240, 230, 0.04);
+    --claro-70: rgba(255, 240, 230, 0.05);
+    --claro-80: rgba(255, 240, 230, 0.05);
+    --claro-85: rgba(255, 240, 230, 0.05);
+    --claro-90: rgba(255, 240, 230, 0.12);
+    --texto-medio: #c9b9ad;
+    --texto-fraco: #7a6c62;
+    --aviso-fundo: rgba(242, 181, 68, 0.12);
+    --aviso-fundo-forte: rgba(242, 181, 68, 0.2);
+    --erro-fundo: rgba(255, 122, 112, 0.14);
+    --midia-fundo: rgba(255, 240, 230, 0.06);
+    --brilho-1: rgba(232, 85, 31, 0.32);
+    --brilho-2: rgba(255, 178, 61, 0.14);
+    --brilho-3: rgba(232, 85, 31, 0.16);
 }
 
 * {
@@ -47,9 +107,9 @@ body {
     inset: 0;
     z-index: -1;
     background:
-        radial-gradient(ellipse 80% 60% at 90% -5%, rgba(232, 85, 31, 0.7), transparent 70%),
-        radial-gradient(ellipse 60% 50% at 5% 10%, rgba(255, 178, 61, 0.6), transparent 70%),
-        radial-gradient(ellipse 70% 50% at 50% 110%, rgba(255, 140, 90, 0.35), transparent 70%),
+        radial-gradient(ellipse 80% 60% at 90% -5%, var(--brilho-1), transparent 70%),
+        radial-gradient(ellipse 60% 50% at 5% 10%, var(--brilho-2), transparent 70%),
+        radial-gradient(ellipse 70% 50% at 50% 110%, var(--brilho-3), transparent 70%),
         var(--fundo);
 }
 
@@ -157,7 +217,7 @@ h1 span {
     right: 8px;
     width: 9px;
     height: 9px;
-    border: 2px solid #fff;
+    border: 2px solid var(--cartao);
     border-radius: 50%;
     background: var(--destaque);
 }
@@ -247,7 +307,7 @@ h1 span {
     padding: 8px 10px;
     border: 1px solid var(--borda);
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.6);
+    background: var(--claro-60);
 }
 
 .pasta-rotulo {
@@ -335,7 +395,7 @@ h1 span {
 
 .atualizacao ul {
     margin: 0 0 14px 18px;
-    color: #6d6259;
+    color: var(--texto-medio);
     font-size: 14px;
 }
 
@@ -380,7 +440,7 @@ h1 span {
     padding: 9px 16px;
     border: 1px solid var(--borda-forte);
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.7);
+    background: var(--claro-70);
     color: var(--texto);
     font: inherit;
     font-size: 14px;
@@ -388,7 +448,7 @@ h1 span {
 }
 
 .botao-depois:hover {
-    background: #fff;
+    background: var(--cartao);
 }
 
 .botao-depois[hidden] {
@@ -397,7 +457,7 @@ h1 span {
 
 .atualizacao-mensagem {
     margin-top: 10px;
-    color: #6d6259;
+    color: var(--texto-medio);
     font-size: 13px;
 }
 
@@ -514,7 +574,7 @@ input[type="url"].escondido {
 
 input[type="url"]::placeholder,
 .varios-links::placeholder {
-    color: #aaa29b;
+    color: var(--texto-fraco);
 }
 
 input[type="url"]:focus,
@@ -571,7 +631,7 @@ input[type="url"]:focus,
     padding: 6px 14px;
     border: 1px solid var(--borda-forte);
     border-radius: 2px;
-    background: rgba(255, 255, 255, 0.6);
+    background: var(--claro-60);
     color: var(--texto-suave);
     font: inherit;
     font-size: 13px;
@@ -697,7 +757,7 @@ input[type="url"]:focus,
     padding: 12px 16px;
     border: 1px solid rgba(214, 150, 40, 0.3);
     border-radius: 4px;
-    background: #fff6e3;
+    background: var(--aviso-fundo);
     color: var(--aviso);
     font-size: 14px;
 }
@@ -712,7 +772,7 @@ input[type="url"]:focus,
     padding: 6px 14px;
     border: 1px solid rgba(166, 106, 18, 0.4);
     border-radius: 2px;
-    background: #fff;
+    background: var(--cartao);
     color: var(--aviso);
     font: inherit;
     font-size: 13px;
@@ -720,7 +780,7 @@ input[type="url"]:focus,
 }
 
 .aviso-botao:hover {
-    background: #fffaf0;
+    background: var(--aviso-fundo-forte);
 }
 
 .aviso-botoes {
@@ -737,7 +797,7 @@ input[type="url"]:focus,
     padding: 14px;
     border: 1px solid var(--borda);
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.8);
+    background: var(--claro-80);
 }
 
 .playlist.escondido {
@@ -813,7 +873,7 @@ input[type="url"]:focus,
     aspect-ratio: 16 / 9;
     border-radius: 2px;
     object-fit: cover;
-    background: rgba(28, 25, 23, 0.06);
+    background: var(--midia-fundo);
 }
 
 .playlist-nome {
@@ -869,7 +929,7 @@ input[type="url"]:focus,
     padding: 10px;
     border: 1px solid var(--borda);
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.8);
+    background: var(--claro-80);
 }
 
 .previa.escondido {
@@ -882,7 +942,7 @@ input[type="url"]:focus,
     aspect-ratio: 16 / 9;
     border-radius: 2px;
     overflow: hidden;
-    background: #ece7e2;
+    background: var(--midia-fundo);
 }
 
 .previa-midia img,
@@ -906,7 +966,7 @@ input[type="url"]:focus,
     height: 42px;
     border: none;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.9);
+    background: var(--claro-90);
     color: var(--escuro);
     font-size: 14px;
     cursor: pointer;
@@ -914,7 +974,7 @@ input[type="url"]:focus,
 }
 
 .previa-play:hover {
-    background: #fff;
+    background: var(--cartao);
     transform: scale(1.06);
 }
 
@@ -1015,7 +1075,7 @@ input[type="url"]:focus,
     padding: 14px 16px;
     border: 1px solid var(--borda);
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.85);
+    background: var(--claro-85);
 }
 
 .item-topo {
@@ -1081,7 +1141,7 @@ input[type="url"]:focus,
     padding: 5px 12px;
     border: 1px solid var(--borda-forte);
     border-radius: 2px;
-    background: #fff;
+    background: var(--cartao);
     color: var(--texto);
     font: inherit;
     font-size: 13px;
@@ -1099,7 +1159,7 @@ input[type="url"]:focus,
 }
 
 .item-botao.cancelar:hover {
-    background: #fdecec;
+    background: var(--erro-fundo);
 }
 
 /* ==========================================
@@ -1118,7 +1178,7 @@ input[type="url"]:focus,
     padding: 44px 16px;
     border: 1.5px dashed rgba(232, 85, 31, 0.35);
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.5);
+    background: var(--claro-50);
     color: var(--texto-suave);
     text-align: center;
     cursor: pointer;
@@ -1133,7 +1193,7 @@ input[type="url"]:focus,
 .area-arquivo.arrastando,
 .area-arquivo:hover {
     border-color: rgba(232, 85, 31, 0.5);
-    background: rgba(253, 238, 228, 0.7);
+    background: var(--destaque-fundo);
 }
 
 .icone {
@@ -1318,7 +1378,7 @@ input[type="url"]:focus,
 
 .item-botao.remover:hover {
     color: var(--erro);
-    background: #fdecec;
+    background: var(--erro-fundo);
     border-color: transparent;
 }
 
@@ -1357,7 +1417,7 @@ footer {
     padding: 8px 18px;
     border: 1px solid rgba(210, 60, 60, 0.3);
     border-radius: 2px;
-    background: rgba(255, 255, 255, 0.6);
+    background: var(--claro-60);
     color: var(--erro);
     font: inherit;
     font-size: 13px;
@@ -1365,7 +1425,7 @@ footer {
 }
 
 .encerrar:hover {
-    background: #fdecec;
+    background: var(--erro-fundo);
 }
 
 /* Tela mostrada depois de encerrar o programa */

@@ -50,7 +50,15 @@
         <!-- Configurações: abrir sempre na janela do aplicativo ou no navegador -->
         <div id="configuracoes" class="notificacoes configuracoes escondido">
           <strong class="notificacoes-titulo">Configurações</strong>
-          <p class="config-rotulo">Abrir o programa em</p>
+          <p class="config-rotulo">Tema</p>
+          <div class="config-opcoes" id="config-tema">
+            <button type="button" class="chip" data-tema="automatico">Automático</button>
+            <button type="button" class="chip" data-tema="claro">☀ Claro</button>
+            <button type="button" class="chip" data-tema="escuro">☾ Escuro</button>
+          </div>
+          <p class="config-dica" id="config-tema-dica"></p>
+
+          <p class="config-rotulo config-secao">Abrir o programa em</p>
           <div class="config-opcoes" id="config-modo">
             <button type="button" class="chip" data-modo="janela">Janela do aplicativo</button>
             <button type="button" class="chip" data-modo="navegador">Navegador</button>

@@ -2,22 +2,19 @@
 import os
 import sys
 
-from servicos import programa
+from servicos import preferencias, programa
 from servicos.caminhos import PASTA_PAINEL
 from servicos.downloader import downloads_em_andamento
 
 TITULO = "Puxaí"
+# Cor de fundo enquanto a página carrega (a mesma do --fundo de cada tema)
+FUNDO = {"claro": "#fff4ea", "escuro": "#150f0c"}
 
 
-def colocar_icone_na_janela(titulo, caminho_icone):
-    """Troca o ícone da janela (barra de título e barra de tarefas).
-
-    Usa mensagens do Windows enviadas com PostMessage, que não esperam resposta.
-    Não mexe na janela pelo .NET a partir de outra thread: isso pode travar a
-    janela ("Não respondendo"), porque só a thread dona da janela pode alterá-la.
-    """
+def _achar_janela(titulo=TITULO):
+    """A janela (HWND) com esse título que pertence a este processo, ou None."""
     if sys.platform != "win32":
-        return
+        return None
     import ctypes
     from ctypes import wintypes
 
@@ -25,7 +22,6 @@ def colocar_icone_na_janela(titulo, caminho_icone):
     meu_pid = os.getpid()
     encontrada = []
 
-    # Procura a janela com esse título que pertence a este processo
     @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
     def verificar(hwnd, _):
         pid = wintypes.DWORD()
@@ -39,8 +35,47 @@ def colocar_icone_na_janela(titulo, caminho_icone):
         return True
 
     user32.EnumWindows(verificar, 0)
-    if not encontrada:
+    return encontrada[0] if encontrada else None
+
+
+def barra_de_titulo_escura(escura):
+    """Barra de título escura (ou clara) como a dos aplicativos do Windows no modo escuro.
+    Funciona no Windows 10 (20H1 em diante) e 11; nos outros, não faz nada."""
+    hwnd = _achar_janela()
+    if not hwnd:
         return
+    import ctypes
+    from ctypes import wintypes
+
+    valor = ctypes.c_int(1 if escura else 0)
+    dwmapi = ctypes.windll.dwmapi
+    dwmapi.DwmSetWindowAttribute.argtypes = [wintypes.HWND, wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD]
+    for atributo in (20, 19):  # DWMWA_USE_IMMERSIVE_DARK_MODE (19 nas versões antigas do Windows 10)
+        if dwmapi.DwmSetWindowAttribute(hwnd, atributo, ctypes.byref(valor), ctypes.sizeof(valor)) == 0:
+            break
+    # Redesenha a barra (sem isso, ela só muda quando a janela perde e ganha o foco)
+    user32 = ctypes.windll.user32
+    SWP_SEM_MUDAR = 0x0001 | 0x0002 | 0x0004 | 0x0010 | 0x0020  # NOSIZE|NOMOVE|NOZORDER|NOACTIVATE|FRAMECHANGED
+    user32.SetWindowPos.argtypes = [wintypes.HWND, wintypes.HWND, ctypes.c_int, ctypes.c_int,
+                                    ctypes.c_int, ctypes.c_int, wintypes.UINT]
+    user32.SetWindowPos(hwnd, None, 0, 0, 0, 0, SWP_SEM_MUDAR)
+
+
+def colocar_icone_na_janela(titulo, caminho_icone):
+    """Troca o ícone da janela (barra de título e barra de tarefas).
+
+    Usa mensagens do Windows enviadas com PostMessage, que não esperam resposta.
+    Não mexe na janela pelo .NET a partir de outra thread: isso pode travar a
+    janela ("Não respondendo"), porque só a thread dona da janela pode alterá-la.
+    """
+    hwnd = _achar_janela(titulo)
+    if not hwnd:
+        return
+    import ctypes
+    from ctypes import wintypes
+
+    user32 = ctypes.windll.user32
+    encontrada = [hwnd]
 
     IMAGE_ICON, LR_LOADFROMFILE, WM_SETICON = 1, 0x10, 0x80
     # Tipos declarados: no Windows 64 bits, os identificadores não cabem num int comum
@@ -63,9 +98,10 @@ def abrir_janela():
         # Faz a barra de tarefas tratar o programa como um aplicativo próprio (e não como "Python")
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Puxai.Painel")
 
+    tema = preferencias.tema_em_uso()
     janela = programa.janela = webview.create_window(
         TITULO, programa.ENDERECO_PAINEL,
-        width=760, height=900, min_size=(440, 620), background_color="#fff4ea",
+        width=760, height=900, min_size=(440, 620), background_color=FUNDO[tema],
     )
 
     def ao_mostrar():
@@ -74,6 +110,11 @@ def abrir_janela():
             colocar_icone_na_janela(TITULO, os.path.join(PASTA_PAINEL, "icone.ico"))
         except Exception as e:
             print(f"[JANELA] Não foi possível colocar o ícone: {e}")
+        if tema == "escuro":
+            try:
+                barra_de_titulo_escura(True)
+            except Exception as e:
+                print(f"[JANELA] Não foi possível escurecer a barra de título: {e}")
 
     def ao_fechar():
         # Trocando para o navegador: o programa continua, então não precisa perguntar

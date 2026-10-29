@@ -5,7 +5,7 @@ import webbrowser
 from flask import Blueprint, jsonify, request
 
 from servicos import destinos, preferencias, programa
-from servicos.janela import trazer_para_frente
+from servicos.janela import barra_de_titulo_escura, trazer_para_frente
 
 rotas = Blueprint("programa", __name__)
 
@@ -43,19 +43,37 @@ def focar_api():
     return jsonify({"ok": True})
 
 
+def dados_das_preferencias():
+    return {
+        "modo_abertura": preferencias.modo_de_abertura(),
+        "tema": preferencias.tema(),               # o escolhido: automatico, claro ou escuro
+        "tema_em_uso": preferencias.tema_em_uso(),  # claro ou escuro (automático = o do Windows)
+    }
+
+
 @rotas.route('/api/preferencias', methods=['GET'])
 def preferencias_api():
-    return jsonify({"modo_abertura": preferencias.modo_de_abertura()})
+    return jsonify(dados_das_preferencias())
 
 
 @rotas.route('/api/preferencias', methods=['POST'])
 def salvar_preferencias_api():
-    # Configurações do painel: abrir sempre na janela do aplicativo ou no navegador
-    modo = (request.get_json(silent=True) or {}).get("modo_abertura")
-    if modo not in preferencias.MODOS_DE_ABERTURA:
-        return jsonify({"erro": "Use 'janela' ou 'navegador'."}), 400
-    preferencias.salvar("modo_abertura", modo)
-    return jsonify({"modo_abertura": modo})
+    # Configurações do painel: abrir na janela ou no navegador, e o tema (claro, escuro, automático)
+    dados = request.get_json(silent=True) or {}
+    if "modo_abertura" not in dados and "tema" not in dados:
+        return jsonify({"erro": "Envie modo_abertura e/ou tema."}), 400
+    if "modo_abertura" in dados:
+        if dados["modo_abertura"] not in preferencias.MODOS_DE_ABERTURA:
+            return jsonify({"erro": "Use 'janela' ou 'navegador'."}), 400
+        preferencias.salvar("modo_abertura", dados["modo_abertura"])
+    if "tema" in dados:
+        if dados["tema"] not in preferencias.TEMAS:
+            return jsonify({"erro": "Tema inválido. Use 'automatico', 'claro' ou 'escuro'."}), 400
+        preferencias.salvar("tema", dados["tema"])
+        if programa.na_janela():
+            # A barra de título da janela acompanha o tema na hora
+            barra_de_titulo_escura(preferencias.tema_em_uso() == "escuro")
+    return jsonify(dados_das_preferencias())
 
 
 @rotas.route('/api/pastas', methods=['GET'])

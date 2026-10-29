@@ -1,10 +1,11 @@
 """Preferências da pessoa, guardadas em .preferencias.json ao lado do programa.
 
-Ex.: { "modo_abertura": "navegador", "atualizacao_adiada": "2.1.0" }
+Ex.: { "modo_abertura": "navegador", "tema": "escuro", "atualizacao_adiada": "2.1.0" }
 O arquivo fica fora do Git e o botão de atualizar não mexe nele.
 """
 import json
 import os
+import sys
 import threading
 
 from servicos.caminhos import PASTA_BASE
@@ -39,3 +40,33 @@ def salvar(chave, valor):
 def modo_de_abertura():
     modo = obter("modo_abertura", "janela")
     return modo if modo in MODOS_DE_ABERTURA else "janela"
+
+
+# Tema do painel: "automatico" segue o Windows (claro ou escuro)
+TEMAS = ("automatico", "claro", "escuro")
+
+
+def tema():
+    escolhido = obter("tema", "automatico")
+    return escolhido if escolhido in TEMAS else "automatico"
+
+
+def windows_no_modo_escuro():
+    """True se os aplicativos do Windows estão no modo escuro (Configurações > Cores)."""
+    if sys.platform != "win32":
+        return False
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                            r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize") as chave:
+            return winreg.QueryValueEx(chave, "AppsUseLightTheme")[0] == 0
+    except OSError:
+        return False
+
+
+def tema_em_uso():
+    """ "claro" ou "escuro": o escolhido, ou o do Windows quando é automático."""
+    escolhido = tema()
+    if escolhido == "automatico":
+        return "escuro" if windows_no_modo_escuro() else "claro"
+    return escolhido
