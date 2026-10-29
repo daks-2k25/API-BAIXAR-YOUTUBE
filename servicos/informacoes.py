@@ -49,7 +49,7 @@ def obter_informacoes(url):
             "id": info.get("id"),
             "titulo": titulo_amigavel(info),
             "canal": info.get("channel") or info.get("uploader"),
-            "site": nome_do_site(info),  # YouTube, TikTok ou Instagram
+            "site": nome_do_site(info),  # "YouTube", "TikTok", "Twitch"...
             "duracao": formatar_duracao(info.get("duration")),
             "miniatura": info.get("thumbnail"),
             # Só vídeos do YouTube podem ser assistidos dentro do painel

@@ -29,7 +29,7 @@ No primeiro clique ele também cria o atalho **Puxaí**, com a logo, na **Área 
 - **Atualização pelo próprio programa**: quando sai uma versão nova, aparece um aviso com as novidades e o botão **Atualizar agora**
 - **Notificações**: sino 🔔 com bolinha quando há versão nova, notificação no canto da janela e verificação automática a cada 30 minutos com o programa aberto
 - **Prévia do vídeo** ao colar o link: miniatura, título, canal e duração, com opção de assistir ali mesmo para conferir antes de baixar
-- **YouTube, TikTok e Instagram** (vídeos e reels): é só colar o link
+- **YouTube, TikTok, Instagram e mais de mil sites**: X (Twitter), Facebook, Twitch, SoundCloud, Dailymotion, Vimeo, Reddit, Pinterest, Bilibili, Bandcamp, 9GAG e todos os outros que o [yt-dlp](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md) conhece. É só colar o link
 - Download de vídeo em **MP4** com **escolha de resolução** (360p, 480p, 720p ou 1080p), inclusive em vídeos verticais (TikTok, Reels, Shorts). No TikTok, sempre a versão **sem marca d'água**
 - Extração de áudio em **MP3** (192 kbps) com **capa e informações**: a miniatura do vídeo vira a capa (quadrada, como a de um álbum), e o MP3 leva título, artista, álbum (quando o YouTube informa) e ano, para aparecer certinho no player e no celular. O título sai sem o artista na frente e sem "(Official Video)", "[Lyrics]" e parecidos; no comentário vai o link do vídeo
 - **Até 3 downloads ao mesmo tempo**, com acompanhamento de progresso
@@ -48,7 +48,7 @@ No primeiro clique ele também cria o atalho **Puxaí**, com a logo, na **Área 
 
 ## Usando o programa
 
-- **Baixar:** cole o link do YouTube, TikTok ou Instagram e confira a prévia do vídeo (no YouTube, clique na miniatura para assistir ali mesmo). Escolha MP4 ou MP3 e a resolução, e clique em **Baixar agora**. O arquivo é salvo na sua pasta **Downloads**; o botão **Mostrar na pasta** abre o Explorador com ele selecionado.
+- **Baixar:** cole o link do vídeo (YouTube, TikTok, Instagram ou outro site) e confira a prévia do vídeo (no YouTube, clique na miniatura para assistir ali mesmo). Escolha MP4 ou MP3 e a resolução, e clique em **Baixar agora**. O arquivo é salvo na sua pasta **Downloads**; o botão **Mostrar na pasta** abre o Explorador com ele selecionado.
 - **Vários links:** cole vários links de uma vez no campo (o painel percebe e abre uma caixa com um link por linha) ou clique em **+ Colar vários links de uma vez**. Os links podem estar um por linha, separados por espaço ou no meio de outro texto; repetidos contam uma vez só (inclusive o mesmo vídeo do YouTube escrito de jeitos diferentes). O formato e a qualidade escolhidos valem para todos. Vídeo aberto dentro de uma playlist baixa só o vídeo; o link de uma playlist inteira precisa ser colado sozinho, para escolher os vídeos.
 - **Link copiado:** copiou o link de um vídeo (no navegador, no WhatsApp...) e voltou para o Puxaí? Aparece **"Você copiou um link do YouTube"** com o botão **Colar**. Funciona com qualquer site que o yt-dlp baixa (YouTube, TikTok, Instagram, X, Vimeo, Reddit, Facebook...), mesmo com o link no meio de uma mensagem. O **✕** dispensa aquele link (ele não é oferecido de novo). O Puxaí só olha o que está copiado quando você abre ou volta para ele, com o campo de link vazio, e só usa o texto se for um link de vídeo: qualquer outra coisa copiada é ignorada e não fica guardada. Para desligar: **⚙ Configurações → Avisar quando eu copiar um link de vídeo**.
 - **Cortar trecho:** clique em **✂ Cortar trecho** e preencha o início e o fim (ex.: `1:20` e `2:05`). Deixe o fim vazio para ir até o final do vídeo.
@@ -72,17 +72,25 @@ No primeiro clique ele também cria o atalho **Puxaí**, com a logo, na **Área 
 
 Se clicar no atalho com o programa já aberto, ele só traz a janela para a frente (ou abre o painel no navegador, se estiver nesse modo). As mensagens do programa ficam no arquivo `Puxai.log`, útil se algo der errado. Se a janela própria não puder ser criada no PC (ex.: sem o componente WebView2 do Windows), o painel abre no navegador, como alternativa.
 
-### Instagram: posts que pedem login
+### Outros sites
 
-Reels e vídeos **públicos** do Instagram baixam sem login. Se algum post só abrir com uma conta logada, o programa avisa. Nesse caso:
+Funciona com qualquer site da [lista do yt-dlp](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md): é só colar o link do vídeo (o do próprio vídeo, não o do perfil ou da página inicial). A prévia mostra o nome do site, e o aviso de **link copiado** também reconhece todos eles.
 
-1. No Chrome, logado no Instagram, instale a extensão **Get cookies.txt LOCALLY**.
-2. Abra o instagram.com, clique na extensão e exporte os cookies.
+Testados na prática: YouTube, TikTok, Instagram, Twitch, SoundCloud, Dailymotion, Bandcamp, Streamable, Pinterest, Bilibili, Internet Archive, Imgur, 9GAG e Mixcloud.
+
+Alguns sites mudam com frequência ou bloqueiam programas; quando algo falha, o Puxaí diz o motivo (vídeo privado, post sem vídeo, site fora do ar, site que mudou...). O yt-dlp é atualizado sozinho, então um site que parou de funcionar costuma voltar em poucos dias. Sites que bloqueiam quem não é navegador são acessados se passando por um navegador (o pacote `curl_cffi`, que já vem junto).
+
+### Vídeos que pedem login (Instagram, Reddit, Vimeo, restrição de idade...)
+
+Vídeos **públicos** baixam sem login. Alguns sites (ou posts) só abrem com uma conta logada: posts do Instagram, o Reddit, o Vimeo, vídeos do YouTube com restrição de idade... O programa avisa quando é o caso. Para usar o seu login:
+
+1. No Chrome, logado no site, instale a extensão **Get cookies.txt LOCALLY**.
+2. Abra o site, clique na extensão e exporte os cookies.
 3. Salve o arquivo com o nome **`cookies.txt`** na pasta do programa (ao lado do `iniciar.bat`, ou dentro de `Puxai\` no programa gerado).
 
-O programa passa a usar esse login automaticamente. O `cookies.txt` dá acesso à sua conta: não compartilhe esse arquivo. Ele não vai para o Git e o botão de atualizar não mexe nele.
+O programa passa a usar esse login automaticamente, em todos os sites (dá para exportar os cookies de vários sites no mesmo arquivo). O `cookies.txt` dá acesso às suas contas: não compartilhe esse arquivo. Ele não vai para o Git e o botão de atualizar não mexe nele.
 
-> O yt-dlp não consegue ler os cookies do Chrome direto no Windows (o Chrome protege esses dados), por isso o caminho é exportar o arquivo. O Instagram baixa os vídeos; fotos de posts não são baixadas.
+> O yt-dlp não consegue ler os cookies do Chrome direto no Windows (o Chrome protege esses dados), por isso o caminho é exportar o arquivo. No Instagram, os vídeos são baixados; fotos de posts não.
 
 ### Como a atualização funciona
 
@@ -131,7 +139,7 @@ API-BAIXAR-YOUTUBE/
 │   ├── atualizador.py   # Mantém o yt-dlp atualizado dentro do executável
 │   ├── downloader.py    # Fila de downloads, corte de trecho e cancelamento (yt-dlp)
 │   ├── informacoes.py   # Prévia do vídeo (título, canal, duração, miniatura)
-│   ├── sites.py         # O que é comum a YouTube, TikTok e Instagram (títulos, login, mensagens de erro)
+│   ├── sites.py         # O que é comum aos sites (nomes, títulos, login, mensagens de erro)
 │   └── conversor.py     # Conversão de fotos: HEIC -> JPG e HEIC/JPG/PNG -> WebP (FFmpeg)
 ├── logos/               # Identidade visual: logo e ícones em SVG, PNG e WebP
 ├── ferramentas/
@@ -222,7 +230,7 @@ curl -X POST http://127.0.0.1:5000/api/download \
 { "erro": "Qualidade inválida. Opções: 360p, 480p, 720p, 1080p." }
 ```
 
-Se o vídeo não tiver a resolução pedida, a API baixa a maior disponível abaixo dela.
+Se o vídeo não tiver a resolução pedida, a API baixa a maior disponível abaixo dela. Alguns sites oferecem uma qualidade só (por exemplo, clipes da Twitch só em 1080p); nesse caso vem essa, mesmo acima da escolhida. Em sites só de áudio (SoundCloud, Bandcamp, Mixcloud), escolha MP3: em MP4 o arquivo sai só com o som.
 
 ### `GET /api/info?url=<link>`
 

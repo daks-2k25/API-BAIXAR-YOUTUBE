@@ -1,4 +1,4 @@
-"""Baixar vídeos e músicas (YouTube, TikTok e Instagram)."""
+"""Baixar vídeos e músicas (YouTube, TikTok, Instagram e os outros sites que o yt-dlp conhece)."""
 import os
 import re
 import uuid

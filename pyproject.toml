@@ -8,7 +8,10 @@ dependencies = [
     "flask",
     "waitress",            # servidor web (mais robusto que o servidor de desenvolvimento do Flask)
     "pywebview",           # abre o painel numa janela própria, em vez do navegador
-    "yt-dlp[default]",     # [default] inclui o yt-dlp-ejs, que o yt-dlp usa junto com o Deno
+    # [default] inclui o yt-dlp-ejs, que o yt-dlp usa junto com o Deno.
+    # [curl-cffi] faz o yt-dlp se passar por um navegador nos sites que bloqueiam
+    # quem não é navegador ("TLS fingerprint").
+    "yt-dlp[default,curl-cffi]",
 ]
 
 [tool.uv]

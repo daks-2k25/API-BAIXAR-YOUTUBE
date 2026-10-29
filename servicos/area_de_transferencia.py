@@ -11,16 +11,11 @@ import re
 import sys
 import time
 
-from servicos.sites import NOMES_DOS_SITES
+from servicos.sites import nome_amigavel
 
 CF_UNICODETEXT = 13
 LINK = re.compile(r"https?://[^\s<>\"']+", re.IGNORECASE)
 TAMANHO_MAXIMO = 4000  # texto maior que isso não é "um link copiado"
-
-# Nomes amigáveis de outros sites (o yt-dlp chama o X de "twitter", por exemplo)
-OUTROS_NOMES = {"Twitter": "X (Twitter)", "Vimeo": "Vimeo", "Facebook": "Facebook", "Reddit": "Reddit",
-                "Twitch": "Twitch", "Soundcloud": "SoundCloud", "Kwai": "Kwai", "Pinterest": "Pinterest",
-                "Dailymotion": "Dailymotion", "Bilibili": "Bilibili", "Threads": "Threads"}
 
 _extratores = None
 _cache = {}
@@ -77,11 +72,7 @@ def _site_do_link(url):
         # "Generic" aceita qualquer link: não diz nada sobre ser um site de vídeo
         _extratores = [e for e in gen_extractor_classes() if e.ie_key() != "Generic"]
     extrator = next((e for e in _extratores if e.suitable(url)), None)
-    site = None
-    if extrator:
-        chave = extrator.ie_key()
-        site = next((nome for prefixo, nome in {**NOMES_DOS_SITES, **OUTROS_NOMES}.items()
-                     if chave.startswith(prefixo)), None) or extrator.IE_NAME.split(":")[0].capitalize()
+    site = nome_amigavel(extrator.ie_key(), extrator.IE_NAME) if extrator else None
     if len(_cache) > 200:
         _cache.clear()
     _cache[url] = site

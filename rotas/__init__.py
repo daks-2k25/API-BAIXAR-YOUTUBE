@@ -1,6 +1,6 @@
 """Endereços da API (/api/...) usados pelo painel, um arquivo por área:
 
-- videos.py       baixar vídeos e músicas (YouTube, TikTok, Instagram)
+- videos.py       baixar vídeos e músicas (YouTube, TikTok, Instagram e mais de mil sites)
 - fotos.py        converter e comprimir fotos
 - comprimir_video.py  comprimir vídeos do computador
 - arquivos.py     mostrar na pasta, abrir e "Meus downloads"

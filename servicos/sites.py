@@ -1,15 +1,40 @@
-"""O que é comum aos sites suportados (YouTube, TikTok e Instagram)."""
+"""O que é comum aos sites de vídeo: nomes, títulos, login e mensagens de erro.
+
+O Puxaí baixa de qualquer site que o yt-dlp conhece (mais de mil): YouTube,
+TikTok, Instagram, X, Facebook, Twitch, SoundCloud, Dailymotion, Vimeo...
+"""
 import os
 from urllib.parse import parse_qs, urlparse
 
 from servicos.caminhos import PASTA_BASE
 
-# Login opcional: alguns posts do Instagram só abrem com uma conta logada.
-# Coloque um cookies.txt (exportado do navegador com uma extensão como
-# "Get cookies.txt LOCALLY") ao lado do programa e ele passa a ser usado.
+# Login opcional: alguns vídeos só abrem com uma conta logada (posts do Instagram,
+# Reddit, Vimeo, vídeos com restrição de idade...). Coloque um cookies.txt
+# (exportado do navegador com uma extensão como "Get cookies.txt LOCALLY") ao
+# lado do programa e ele passa a ser usado em todos os sites.
 ARQUIVO_COOKIES = os.path.join(PASTA_BASE, "cookies.txt")
 
-NOMES_DOS_SITES = {"Youtube": "YouTube", "YoutubeTab": "YouTube", "TikTok": "TikTok", "Instagram": "Instagram"}
+# Nome do extrator do yt-dlp (começo do nome) -> nome para mostrar no painel
+NOMES_DOS_SITES = {
+    "Youtube": "YouTube", "TikTok": "TikTok", "Instagram": "Instagram", "Twitter": "X (Twitter)",
+    "Facebook": "Facebook", "Twitch": "Twitch", "Soundcloud": "SoundCloud", "DailyMotion": "Dailymotion",
+    "Vimeo": "Vimeo", "Reddit": "Reddit", "Kwai": "Kwai", "Pinterest": "Pinterest", "BiliBili": "Bilibili",
+    "Bandcamp": "Bandcamp", "Mixcloud": "Mixcloud", "Streamable": "Streamable", "NineGag": "9GAG",
+    "ArchiveOrg": "Internet Archive", "Imgur": "Imgur", "Threads": "Threads", "Bluesky": "Bluesky",
+    "Tumblr": "Tumblr", "Rumble": "Rumble", "Kick": "Kick", "Odysee": "Odysee", "Snapchat": "Snapchat",
+    "Globo": "Globoplay", "Spotify": "Spotify", "Linkedin": "LinkedIn", "Loom": "Loom", "Ted": "TED",
+}
+
+
+def nome_amigavel(chave_do_extrator, nome_interno=""):
+    """"TwitchClips" -> "Twitch". Site sem nome cadastrado: o nome que o yt-dlp usa."""
+    chave = chave_do_extrator or ""
+    for prefixo, nome in NOMES_DOS_SITES.items():
+        if chave.lower().startswith(prefixo.lower()):
+            return nome
+    nome = (nome_interno or chave).split(":")[0]
+    # "CNN" fica "CNN"; "youtube" vira "Youtube"
+    return nome if any(letra.isupper() for letra in nome) else nome.capitalize()
 
 
 def e_playlist_sem_video(url):
@@ -42,7 +67,7 @@ def opcoes_de_login():
 
 
 def nome_do_site(info):
-    return NOMES_DOS_SITES.get(info.get("extractor_key"), info.get("extractor_key") or "")
+    return nome_amigavel(info.get("extractor_key"), info.get("extractor"))
 
 
 def titulo_amigavel(info):
@@ -62,20 +87,49 @@ def titulo_amigavel(info):
     return titulo or info.get("id") or "video"
 
 
+COOKIES = "Coloque um arquivo cookies.txt ao lado do programa (veja o README) e tente de novo."
+COOKIES_NO_MEIO = "coloque um arquivo cookies.txt ao lado do programa (veja o README)."
+
+# (trechos da mensagem do yt-dlp, mensagem para quem usa). A ordem importa: a
+# primeira que combinar vale (ex.: "Private video. Sign in..." é "privado", não "login").
+MENSAGENS = [
+    # O Instagram responde assim tanto para post apagado/privado quanto para post que pede login
+    (("empty media response",),
+     "Não foi possível abrir esse post do Instagram. Ele pode ser privado, ter sido apagado "
+     "ou exigir login (nesse caso, veja no README como usar o arquivo cookies.txt)."),
+    (("not a bot",),
+     "O YouTube pediu para confirmar que não é um robô. Espere alguns minutos e tente de novo; "
+     f"se continuar, {COOKIES_NO_MEIO}"),
+    (("tls fingerprint", "impersonat"),
+     "Esse site bloqueou o acesso de programas (só deixa navegadores). Tente de novo mais tarde; "
+     f"se o vídeo pedir login, {COOKIES_NO_MEIO}"),
+    (("private", "privado"), "Esse vídeo é privado."),
+    (("sign in to confirm your age", "age-restricted", "age restricted"),
+     f"Esse vídeo tem restrição de idade e só abre com login. {COOKIES}"),
+    (("login", "logged-in", "log in", "sign in", "authentication", "cookies", "rate-limit"),
+     f"Esse vídeo exige login para ser baixado. {COOKIES}"),
+    (("no video could be found", "no video formats", "there's no video", "no media found"),
+     "Esse post não tem vídeo (só texto ou imagem)."),
+    (("unsupported url",),
+     "O Puxaí não reconhece esse link. Confira se é o link do próprio vídeo (e não de um perfil "
+     "ou da página inicial do site)."),
+    (("getaddrinfo", "timed out", "network is unreachable", "connection reset", "connection refused",
+      "nodename nor servname", "no address associated"),
+     "Sem conexão com o site. Confira a internet e tente de novo."),
+    (("not available", "unavailable", "removed", "deleted", "404"),
+     "Esse vídeo não está disponível (pode ter sido apagado ou ser restrito)."),
+    (("please report this issue", "unable to extract", "cannot parse"),
+     "O Puxaí não conseguiu ler esse vídeo: o site deve ter mudado. Tente de novo mais tarde "
+     "(o leitor de sites, o yt-dlp, é atualizado sozinho)."),
+    (("http error 5", "unable to download", "http error 403", "http error 429"),
+     "O site não respondeu ou recusou o pedido agora. Tente de novo em alguns minutos."),
+]
+
+
 def mensagem_de_erro(erro):
     """Traduz os erros mais comuns do yt-dlp para uma mensagem que o usuário entenda."""
     texto = str(erro).lower()
-    if "empty media response" in texto:
-        # O Instagram responde assim tanto para post apagado/privado quanto para post que pede login
-        return ("Não foi possível abrir esse post do Instagram. Ele pode ser privado, ter sido apagado "
-                "ou exigir login (nesse caso, veja no README como usar o arquivo cookies.txt).")
-    if "login" in texto or "cookies" in texto or "rate-limit" in texto:
-        return ("Esse post exige login para ser baixado. Coloque um arquivo cookies.txt "
-                "ao lado do programa (veja o README) e tente de novo.")
-    if "private" in texto or "privado" in texto:
-        return "Esse vídeo é privado."
-    if "unsupported url" in texto:
-        return "Link não suportado. Use links do YouTube, TikTok ou Instagram."
-    if "not available" in texto or "unavailable" in texto or "removed" in texto or "404" in texto:
-        return "Esse vídeo não está disponível (pode ter sido apagado ou ser restrito)."
+    for trechos, mensagem in MENSAGENS:
+        if any(trecho in texto for trecho in trechos):
+            return mensagem
     return "Não encontramos esse vídeo. Confira o link."
