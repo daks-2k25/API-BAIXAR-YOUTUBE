@@ -3,6 +3,7 @@
 Também guarda o estado da janela, que é compartilhado entre a inicialização
 (app.py), a janela (janela.py) e as rotas do painel (rotas/programa.py).
 """
+import glob
 import os
 import socket
 import subprocess
@@ -10,7 +11,7 @@ import sys
 import threading
 import time
 
-from servicos.caminhos import EXECUTAVEL, PASTA_RECURSOS
+from servicos.caminhos import EXECUTAVEL, PASTA_DOWNLOADS, PASTA_RECURSOS
 from servicos.downloader import downloads_em_andamento
 
 PORTA = int(os.environ.get("PORTA", 5000))
@@ -76,9 +77,38 @@ def reiniciar(modo):
     )
 
 
+# Funções chamadas logo antes de o programa fechar (ex.: tirar o ícone da bandeja,
+# que senão ficaria "fantasma" perto do relógio até alguém passar o mouse)
+ao_encerrar = []
+
+
 def encerrar():
     print("Encerrando o programa...")
+    for funcao in ao_encerrar:
+        try:
+            funcao()
+        except Exception as e:
+            print(f"[ENCERRAR] {e}")
     os._exit(0)
+
+
+# Sobras certamente incompletas na pasta temporária (downloads\) de vezes anteriores
+# em que o programa fechou no meio de algo. Os arquivos prontos não entram aqui.
+SOBRAS = ("*.part", "*.ytdl", "*_original.*", "*_comprimido.mp4", "*_passadas*", "*_referencia.nut", "*_tentativa.*")
+
+
+def limpar_sobras():
+    """Chamado ao abrir o programa, quando nada está em andamento."""
+    apagadas = 0
+    for padrao in SOBRAS:
+        for arquivo in glob.glob(os.path.join(PASTA_DOWNLOADS, padrao)):
+            try:
+                os.remove(arquivo)
+                apagadas += 1
+            except OSError:
+                pass
+    if apagadas:
+        print(f"[LIMPEZA] {apagadas} arquivo(s) temporário(s) de antes apagado(s).")
 
 
 def encerrar_em_instantes():

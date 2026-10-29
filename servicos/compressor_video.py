@@ -25,7 +25,7 @@ import shutil
 import subprocess
 import threading
 
-from servicos import destinos, historico
+from servicos import destinos, historico, programa
 from servicos.caminhos import PASTA_DOWNLOADS
 from servicos.downloader import (
     arquivos_salvos, caminho_sem_sobrescrever, erros_download, extras_download, nome_de_arquivo_seguro,
@@ -283,6 +283,28 @@ def adicionar(id_trabalho, entrada, nome, modo, tamanho_mb=None, qualidade=None,
     status_download[id_trabalho] = "Na fila..."
     fila.put({"id": id_trabalho, "entrada": entrada, "nome": nome, "modo": modo, "tamanho_mb": tamanho_mb,
               "qualidade": qualidade, "resolucao": resolucao})
+
+
+def parar_tudo():
+    """Ao fechar o programa: para o FFmpeg que estiver rodando e apaga os arquivos
+    temporários das compressões que não terminaram."""
+    cancelados.update(processos)  # interrompido de propósito: não é erro
+    for processo in list(processos.values()):
+        processo.kill()
+        try:
+            processo.wait(timeout=3)  # espera soltar os arquivos para poder apagar
+        except subprocess.TimeoutExpired:
+            pass
+    for id_trabalho in list(trabalhos):
+        if status_download.get(id_trabalho) not in ("Pronto", "Erro", "Cancelado"):
+            for arquivo in glob.glob(os.path.join(PASTA_DOWNLOADS, f"{glob.escape(id_trabalho)}_*")):
+                try:
+                    os.remove(arquivo)
+                except OSError:
+                    pass
+
+
+programa.ao_encerrar.append(parar_tudo)
 
 
 def cancelar(id_trabalho):

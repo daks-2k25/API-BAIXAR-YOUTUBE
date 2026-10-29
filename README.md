@@ -60,6 +60,8 @@ No primeiro clique ele também cria o atalho **Puxaí**, com a logo, na **Área 
 - **Depois:** se preferir atualizar mais tarde, clique em **Depois**. A notificação não volta para essa versão (o sino continua com a bolinha, e a atualização fica disponível nele). Se sair uma versão ainda mais nova, o programa avisa de novo.
 - **Sino 🔔:** mostra a atualização disponível ou confirma que você está na versão mais recente, com o botão **Verificar agora**.
 - **Para fechar:** feche a janela. Se ainda houver download em andamento, o programa pergunta antes.
+- **Ícone perto do relógio (bandeja do Windows):** enquanto o Puxaí está aberto, o ícone dele fica ali. **Clique** para abrir (traz a janela para a frente, ou abre o painel no navegador); com o **botão direito**, o menu tem **Abrir o Puxaí**, **Abrir no navegador**, **Abrir a pasta dos arquivos** e **Encerrar o Puxaí** (que pergunta antes se ainda há downloads ou compressões em andamento). Parando o mouse em cima, aparece quantos itens estão em andamento. No modo navegador, é o jeito mais fácil de fechar o programa. Se o ícone estiver escondido, ele fica na setinha **^** ao lado do relógio.
+- **Arquivos temporários:** se o programa fechar no meio de um download ou de uma compressão, os arquivos incompletos são apagados (na hora, ou na próxima vez que ele abrir).
 - **Onde salvar:** em **⚙ Configurações**, em **Salvar os arquivos em**, escolha **Uma pasta para tudo** ou **Pastas separadas** (Vídeos, Músicas e Fotos). Clique em **Escolher…** para abrir a janela do Windows e escolher a pasta; **Usar Downloads** volta para a pasta Downloads. Se a pasta escolhida não estiver disponível (ex.: HD externo desconectado), o arquivo vai para Downloads.
 - **Janela ou navegador:** em **⚙ Configurações** (ao lado do sino), escolha se o programa abre na **Janela do aplicativo** ou no **Navegador**. A escolha fica salva para as próximas vezes. Para trocar na hora:
   - Na janela, o botão **↗** (ou **Abrir no navegador agora**, nas Configurações) abre o painel no navegador e fecha a janela; o programa continua rodando.
@@ -115,6 +117,7 @@ API-BAIXAR-YOUTUBE/
 ├── servicos/            # O que o programa faz (as rotas só chamam estes arquivos)
 │   ├── programa.py      # Porta, uma instância só, reiniciar, encerrar e estado da janela
 │   ├── janela.py        # Janela própria (pywebview) e ícone na barra de tarefas
+│   ├── bandeja.py       # Ícone perto do relógio, com menu (feito direto com o Windows, sem biblioteca)
 │   ├── caminhos.py      # Pastas do projeto e pasta Downloads do usuário
 │   ├── preferencias.py  # Preferências salvas (.preferencias.json): modo de abertura, pastas, atualização adiada
 │   ├── destinos.py      # Onde salvar os arquivos (uma pasta ou separadas) e a janela de escolher pasta

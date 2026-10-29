@@ -311,9 +311,14 @@ def adicionar_fila(url, formato, qualidade, id_download, trecho=None, pasta=None
     })
 
 
+def quantos_em_andamento():
+    """Quantos downloads (e compressões de vídeo) ainda estão na fila ou acontecendo."""
+    return sum(st not in STATUS_FINAIS for st in list(status_download.values()))
+
+
 def downloads_em_andamento():
     """True se algum download ainda está na fila ou acontecendo."""
-    return any(st not in STATUS_FINAIS for st in list(status_download.values()))
+    return quantos_em_andamento() > 0
 
 
 def cancelar_download(id_download):

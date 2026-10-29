@@ -17,7 +17,7 @@ from servicos import atualizador
 atualizador.usar_versao_atualizada()  # Precisa vir antes de qualquer import do yt-dlp
 
 from rotas import criar_app
-from servicos import preferencias, programa
+from servicos import bandeja, preferencias, programa
 from servicos.janela import abrir_janela
 
 app = criar_app()
@@ -63,9 +63,12 @@ if __name__ == "__main__":
     print("                Puxaí")
     print("==========================================")
 
+    programa.limpar_sobras()  # temporários de uma vez anterior que fechou no meio de algo
+
     servidor = threading.Thread(target=iniciar_servidor, daemon=True)
     servidor.start()
     programa.esperar_servidor()
+    bandeja.iniciar()  # ícone perto do relógio (abrir, navegador, pasta, encerrar)
     atualizador.verificar_atualizacao()  # Só faz algo dentro do .exe, uma vez por dia
 
     # Janela do aplicativo ou navegador: escolhido em Configurações (⚙) no painel.
