@@ -58,6 +58,11 @@
           </div>
           <p class="config-dica" id="config-tema-dica"></p>
 
+          <label class="config-caixa config-secao">
+            <input type="checkbox" id="config-detectar-link" />
+            Avisar quando eu copiar um link de vídeo
+          </label>
+
           <p class="config-rotulo config-secao">Abrir o programa em</p>
           <div class="config-opcoes" id="config-modo">
             <button type="button" class="chip" data-modo="janela">Janela do aplicativo</button>
@@ -111,6 +116,16 @@
       <!-- Ferramenta 1: YouTube -->
       <section id="youtube" class="card">
         <form id="form-download">
+          <!-- Aparece quando há um link de vídeo copiado (preenchido pelo script.js) -->
+          <div id="link-copiado" class="link-copiado escondido">
+            <span class="link-copiado-icone">🔗</span>
+            <span class="link-copiado-texto">
+              <span>Você copiou um link do <b id="link-copiado-site"></b></span>
+              <span id="link-copiado-url" class="link-copiado-url"></span>
+            </span>
+            <button type="button" id="link-copiado-colar" class="item-botao">Colar</button>
+            <button type="button" id="link-copiado-fechar" class="link-copiado-fechar" title="Agora não" aria-label="Agora não">✕</button>
+          </div>
           <input
             id="url"
             type="url"

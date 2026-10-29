@@ -5,7 +5,7 @@ import uuid
 
 from flask import Blueprint, jsonify, request, send_file
 
-from servicos import compressor_video
+from servicos import area_de_transferencia, compressor_video, preferencias
 from servicos.downloader import (
     adicionar_fila, arquivos_salvos, cancelar_download, erros_download, extras_download, nome_de_arquivo_seguro,
     status_download, titulos_download,
@@ -126,6 +126,15 @@ def info_api():
     except Exception as e:
         print(f"[INFO] Não foi possível obter a prévia de {url}: {e}")
         return jsonify({"erro": mensagem_de_erro(e)}), 404
+
+
+@rotas.route('/api/link-copiado', methods=['GET'])
+def link_copiado_api():
+    # O painel pergunta ao abrir e ao voltar para ele: se houver um link de vídeo
+    # copiado, oferece "Colar". Qualquer outro texto copiado não sai daqui.
+    if not preferencias.detectar_link():
+        return jsonify({"url": None, "site": None})
+    return jsonify(area_de_transferencia.link_copiado() or {"url": None, "site": None})
 
 
 @rotas.route('/api/playlist', methods=['GET'])

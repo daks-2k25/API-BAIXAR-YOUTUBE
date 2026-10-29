@@ -50,6 +50,7 @@ No primeiro clique ele também cria o atalho **Puxaí**, com a logo, na **Área 
 
 - **Baixar:** cole o link do YouTube, TikTok ou Instagram e confira a prévia do vídeo (no YouTube, clique na miniatura para assistir ali mesmo). Escolha MP4 ou MP3 e a resolução, e clique em **Baixar agora**. O arquivo é salvo na sua pasta **Downloads**; o botão **Mostrar na pasta** abre o Explorador com ele selecionado.
 - **Vários links:** cole vários links de uma vez no campo (o painel percebe e abre uma caixa com um link por linha) ou clique em **+ Colar vários links de uma vez**. Os links podem estar um por linha, separados por espaço ou no meio de outro texto; repetidos contam uma vez só (inclusive o mesmo vídeo do YouTube escrito de jeitos diferentes). O formato e a qualidade escolhidos valem para todos. Vídeo aberto dentro de uma playlist baixa só o vídeo; o link de uma playlist inteira precisa ser colado sozinho, para escolher os vídeos.
+- **Link copiado:** copiou o link de um vídeo (no navegador, no WhatsApp...) e voltou para o Puxaí? Aparece **"Você copiou um link do YouTube"** com o botão **Colar**. Funciona com qualquer site que o yt-dlp baixa (YouTube, TikTok, Instagram, X, Vimeo, Reddit, Facebook...), mesmo com o link no meio de uma mensagem. O **✕** dispensa aquele link (ele não é oferecido de novo). O Puxaí só olha o que está copiado quando você abre ou volta para ele, com o campo de link vazio, e só usa o texto se for um link de vídeo: qualquer outra coisa copiada é ignorada e não fica guardada. Para desligar: **⚙ Configurações → Avisar quando eu copiar um link de vídeo**.
 - **Cortar trecho:** clique em **✂ Cortar trecho** e preencha o início e o fim (ex.: `1:20` e `2:05`). Deixe o fim vazio para ir até o final do vídeo.
 - **Cancelar:** cada download tem um botão **✕ Cancelar** enquanto está na fila ou baixando.
 - **Converter foto:** escolha **JPG** (a partir de HEIC) ou **WebP** (a partir de HEIC, JPG ou PNG), depois arraste uma ou várias fotos (ou clique para escolher). Elas são convertidas uma de cada vez, cada uma aparece na lista com o resultado, e as convertidas vão para a pasta Downloads. Se uma foto não for aceita (ex.: PNG para JPG), só ela mostra o erro e as outras continuam.
@@ -119,6 +120,7 @@ API-BAIXAR-YOUTUBE/
 │   ├── programa.py      # Porta, uma instância só, reiniciar, encerrar e estado da janela
 │   ├── janela.py        # Janela própria (pywebview) e ícone na barra de tarefas
 │   ├── bandeja.py       # Ícone perto do relógio, com menu (feito direto com o Windows, sem biblioteca)
+│   ├── area_de_transferencia.py # Link de vídeo copiado (o painel oferece "Colar")
 │   ├── caminhos.py      # Pastas do projeto e pasta Downloads do usuário
 │   ├── preferencias.py  # Preferências salvas (.preferencias.json): modo de abertura, pastas, atualização adiada
 │   ├── destinos.py      # Onde salvar os arquivos (uma pasta ou separadas) e a janela de escolher pasta
@@ -238,6 +240,10 @@ Prévia do vídeo, sem baixar nada. Usada pelo painel ao colar um link.
 ```
 
 Responde `400` para links de playlist e `404` quando o vídeo não é encontrado. Se o link for de um canal ou de outra lista de vídeos sem `list=` no endereço, a resposta é `{"playlist": true, "titulo": "..."}`, e o painel abre a lista de vídeos.
+
+### `GET /api/link-copiado`
+
+Se o texto copiado agora (área de transferência do Windows) tiver um link de um site que o yt-dlp baixa, devolve `{"url": "...", "site": "YouTube"}`; senão (ou com a opção desligada nas Configurações), `{"url": null, "site": null}`. Nenhum outro texto copiado é devolvido.
 
 ### `GET /api/playlist?url=<link>`
 

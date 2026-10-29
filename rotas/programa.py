@@ -48,6 +48,7 @@ def dados_das_preferencias():
         "modo_abertura": preferencias.modo_de_abertura(),
         "tema": preferencias.tema(),               # o escolhido: automatico, claro ou escuro
         "tema_em_uso": preferencias.tema_em_uso(),  # claro ou escuro (automático = o do Windows)
+        "detectar_link": preferencias.detectar_link(),  # avisar quando copiar um link de vídeo
     }
 
 
@@ -60,8 +61,12 @@ def preferencias_api():
 def salvar_preferencias_api():
     # Configurações do painel: abrir na janela ou no navegador, e o tema (claro, escuro, automático)
     dados = request.get_json(silent=True) or {}
-    if "modo_abertura" not in dados and "tema" not in dados:
-        return jsonify({"erro": "Envie modo_abertura e/ou tema."}), 400
+    if not {"modo_abertura", "tema", "detectar_link"} & dados.keys():
+        return jsonify({"erro": "Envie modo_abertura, tema e/ou detectar_link."}), 400
+    if "detectar_link" in dados:
+        if not isinstance(dados["detectar_link"], bool):
+            return jsonify({"erro": "detectar_link deve ser true ou false."}), 400
+        preferencias.salvar("detectar_link", dados["detectar_link"])
     if "modo_abertura" in dados:
         if dados["modo_abertura"] not in preferencias.MODOS_DE_ABERTURA:
             return jsonify({"erro": "Use 'janela' ou 'navegador'."}), 400

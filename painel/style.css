@@ -750,6 +750,84 @@ input[type="url"]:focus,
 }
 
 /* ==========================================
+   Link copiado: "Você copiou um link do YouTube… [Colar] [✕]"
+   ========================================== */
+.link-copiado {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border: 1px solid rgba(232, 85, 31, 0.3);
+    border-left: 3px solid var(--destaque);
+    border-radius: 4px;
+    background: var(--destaque-fundo);
+    font-size: 14px;
+    animation: deslizar 0.25s ease-out;
+}
+
+.link-copiado.escondido {
+    display: none;
+}
+
+.link-copiado-icone {
+    flex: none;
+}
+
+/* Texto em cima, link embaixo (cortado com "…" se for comprido) */
+.link-copiado-texto {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.link-copiado-url {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--texto-suave);
+    font-size: 12px;
+}
+
+.link-copiado .item-botao {
+    flex: none;
+    border-color: var(--destaque);
+    color: var(--destaque);
+    font-weight: 600;
+}
+
+.link-copiado-fechar {
+    flex: none;
+    padding: 4px 6px;
+    border: none;
+    background: none;
+    color: var(--texto-suave);
+    font: inherit;
+    cursor: pointer;
+}
+
+.link-copiado-fechar:hover {
+    color: var(--texto);
+}
+
+/* Caixinha de ligar/desligar nas Configurações */
+.config-caixa {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.config-caixa input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--destaque);
+    cursor: pointer;
+}
+
+/* ==========================================
    Aviso de playlist
    ========================================== */
 .aviso {
@@ -1002,6 +1080,7 @@ input[type="url"]:focus,
     line-height: 1.35;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }

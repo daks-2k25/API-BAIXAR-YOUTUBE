@@ -221,6 +221,77 @@ async function baixarPlaylist() {
 }
 
 // ==========================================
+// LINK COPIADO: oferece "Colar" quando há um link de vídeo copiado
+// ==========================================
+// O programa lê a área de transferência e só responde se for um link de vídeo.
+// Pergunta ao abrir e ao voltar para o Puxaí (trocar de janela ou de aba), com
+// o campo vazio. Link dispensado no ✕ não é oferecido de novo.
+const avisoLinkCopiado = document.getElementById("link-copiado");
+const CHAVE_DISPENSADOS = "puxai-links-dispensados";
+let linkOferecido = null;
+let ultimaVerificacao = 0;
+
+function linksDispensados() {
+    try {
+        return JSON.parse(localStorage.getItem(CHAVE_DISPENSADOS) || "[]");
+    } catch {
+        return [];
+    }
+}
+
+function dispensarLink(url) {
+    try {
+        localStorage.setItem(CHAVE_DISPENSADOS, JSON.stringify([url, ...linksDispensados()].slice(0, 30)));
+    } catch {
+        // Sem armazenamento: só não lembra depois de fechar
+    }
+}
+
+function esconderLinkCopiado() {
+    avisoLinkCopiado.classList.add("escondido");
+    linkOferecido = null;
+}
+
+async function verificarLinkCopiado() {
+    // Só faz sentido na aba Vídeos, com o campo vazio e o Puxaí na frente
+    const abaVideos = !document.getElementById("youtube").classList.contains("escondido");
+    if (!abaVideos || modoVarios || campoUrl.value.trim() || document.visibilityState !== "visible") return;
+    if (Date.now() - ultimaVerificacao < 1000) return; // foco e visibilidade chegam juntos
+    ultimaVerificacao = Date.now();
+
+    const dados = await fetch("/api/link-copiado").then((r) => r.json()).catch(() => ({}));
+    if (!dados.url || campoUrl.value.trim() || linksDispensados().includes(dados.url)) {
+        if (!dados.url) esconderLinkCopiado();
+        return;
+    }
+    linkOferecido = dados.url;
+    document.getElementById("link-copiado-site").textContent = dados.site;
+    document.getElementById("link-copiado-url").textContent = dados.url.replace(/^https?:\/\/(www\.)?/, "");
+    document.getElementById("link-copiado-url").title = dados.url;
+    avisoLinkCopiado.classList.remove("escondido");
+}
+
+document.getElementById("link-copiado-colar").addEventListener("click", () => {
+    const url = linkOferecido;
+    dispensarLink(url); // já usado: não oferece de novo
+    esconderLinkCopiado();
+    campoUrl.value = url;
+    aoMudarLink();
+    campoUrl.focus();
+});
+document.getElementById("link-copiado-fechar").addEventListener("click", () => {
+    dispensarLink(linkOferecido);
+    esconderLinkCopiado();
+});
+campoUrl.addEventListener("input", () => {
+    if (campoUrl.value.trim()) esconderLinkCopiado();
+});
+window.addEventListener("focus", verificarLinkCopiado);
+document.addEventListener("visibilitychange", verificarLinkCopiado);
+document.querySelector('[data-aba="youtube"]').addEventListener("click", () => setTimeout(verificarLinkCopiado, 50));
+setTimeout(verificarLinkCopiado, 600);
+
+// ==========================================
 // VÁRIOS LINKS DE UMA VEZ
 // ==========================================
 const campoVarios = document.getElementById("varios-links");
@@ -1322,6 +1393,23 @@ document.querySelectorAll("#config-tema .chip").forEach((chip) => {
 });
 
 aplicarTema(raiz.dataset.temaEscolhido || "automatico");
+
+// Avisar quando copiar um link de vídeo (ligado por padrão)
+const caixaDetectarLink = document.getElementById("config-detectar-link");
+fetch("/api/preferencias")
+    .then((r) => r.json())
+    .then((dados) => (caixaDetectarLink.checked = dados.detectar_link !== false))
+    .catch(() => {});
+caixaDetectarLink.addEventListener("change", async () => {
+    const ligado = caixaDetectarLink.checked;
+    if (!ligado) esconderLinkCopiado();
+    const resposta = await fetch("/api/preferencias", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ detectar_link: ligado }),
+    }).catch(() => null);
+    if (!resposta || !resposta.ok) caixaDetectarLink.checked = !ligado;
+});
 
 // ==========================================
 // CONFIGURAÇÕES: onde salvar os arquivos

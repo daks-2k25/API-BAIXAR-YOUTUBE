@@ -42,6 +42,11 @@ def modo_de_abertura():
     return modo if modo in MODOS_DE_ABERTURA else "janela"
 
 
+def detectar_link():
+    """Avisar quando um link de vídeo for copiado (ligado, a não ser que a pessoa desligue)."""
+    return obter("detectar_link", True) is not False
+
+
 # Tema do painel: "automatico" segue o Windows (claro ou escuro)
 TEMAS = ("automatico", "claro", "escuro")
 
