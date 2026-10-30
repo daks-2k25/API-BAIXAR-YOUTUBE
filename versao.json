@@ -1,9 +1,12 @@
 {
-  "versao": "2.1.0",
+  "versao": "2.2.0",
   "novidades": [
-    "Agora também baixa vídeos do TikTok e do Instagram",
-    "Visual novo, mais claro, com a logo nova",
-    "Sino de notificações: avisa quando sair uma versão nova",
-    "Vídeos verticais (TikTok, Reels e Shorts) na qualidade certa"
+    "Novo nome: Puxaí",
+    "Baixa de mais de mil sites (X, Facebook, Twitch, SoundCloud...), playlists e canais inteiros, escolhendo os vídeos",
+    "Vários links de uma vez, e aviso quando você copia um link de vídeo",
+    "MP3 com capa, título e artista",
+    "Comprimir vídeos (para caber no WhatsApp, Discord ou e-mail) e fotos, e converter fotos para WebP",
+    "Meus downloads: lista de tudo o que você baixou",
+    "Tema escuro, ícone perto do relógio e escolha da pasta onde salvar"
   ]
 }
