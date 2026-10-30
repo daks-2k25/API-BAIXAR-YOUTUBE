@@ -3,8 +3,13 @@
 #
 # - Sozinho: quando a versão muda no versao.json (push na main). Se a Release
 #   dessa versão já existir (ex.: mudou só o texto das novidades), não publica.
-# - Pelo botão "Run workflow" (aba Actions): só gera e testa, sem publicar. O
-#   .zip fica para baixar em "Artifacts", na página da execução.
+# - Pelo botão "Run workflow" (aba Actions): só gera e testa; o .zip fica para
+#   baixar em "Artifacts", na página da execução. Marcando "publicar", também
+#   coloca o .zip na Release da versão atual (cria a Release ou troca o arquivo).
+#
+# O arquivo tem sempre o mesmo nome (Puxai-windows.zip), então este link baixa
+# sempre a versão mais nova, direto:
+#   https://github.com/daks-2k25/API-BAIXAR-YOUTUBE/releases/latest/download/Puxai-windows.zip
 #
 # A receita é a mesma do ferramentas\gerar_exe.bat (usado aqui) e o teste é o
 # ferramentas\testar_exe.ps1: o que roda no seu PC é o que roda aqui.
@@ -15,6 +20,16 @@ on:
     branches: [main]
     paths: [versao.json]
   workflow_dispatch:
+    inputs:
+      publicar:
+        description: "Publicar na Release da versão atual (cria a Release ou troca o .zip dela)"
+        type: boolean
+        default: false
+
+env:
+  # Sempre o mesmo nome: o link .../releases/latest/download/Puxai-windows.zip não muda
+  ARQUIVO: Puxai-windows.zip
+  LINK_DIRETO: https://github.com/daks-2k25/API-BAIXAR-YOUTUBE/releases/latest/download/Puxai-windows.zip
 
 permissions:
   contents: write  # criar a Release e a tag da versão
@@ -43,19 +58,27 @@ jobs:
 
           gh release view "v$versao" *> $null
           $jaExiste = $LASTEXITCODE -eq 0
-          $publicar = ("${{ github.event_name }}" -eq "push") -and -not $jaExiste
+          if ("${{ github.event_name }}" -eq "push") {
+            $publicar = -not $jaExiste           # versão nova: publica; já publicada: não mexe
+          } else {
+            $publicar = "${{ inputs.publicar }}" -eq "true"  # Run workflow: só se marcar "publicar"
+          }
           "publicar=$($publicar.ToString().ToLower())" >> $env:GITHUB_OUTPUT
+          "existe=$($jaExiste.ToString().ToLower())" >> $env:GITHUB_OUTPUT
           Write-Host "Versão $versao | Release já existe: $jaExiste | Publicar: $publicar"
 
           $notas = @("## Novidades", "") + ($dados.novidades | ForEach-Object { "- $_" }) + @(
             "",
-            "## Como usar",
+            "## Como baixar e usar",
             "",
-            "1. Baixe o **Puxai-$versao-windows.zip** aqui embaixo, em *Assets*, e descompacte.",
-            "2. Abra o **Puxai.exe** que está dentro da pasta **Puxai**. Não precisa instalar nada: o FFmpeg já vem junto.",
-            "3. Se o Windows mostrar ""O Windows protegeu o computador"", clique em **Mais informações → Executar assim mesmo**.",
+            "1. **[Clique aqui para baixar o Puxaí]($env:LINK_DIRETO)** (ou baixe o **$env:ARQUIVO** aqui embaixo, em *Assets*).",
+            "2. Clique com o botão direito no arquivo baixado e escolha **Extrair tudo**.",
+            "3. Abra a pasta **Puxai** e dê dois cliques em **Puxai.exe**. Não precisa instalar nada: o FFmpeg já vem junto.",
+            "4. Se o Windows mostrar ""O Windows protegeu o computador"", clique em **Mais informações → Executar assim mesmo** (o aviso aparece porque o programa não tem assinatura digital paga).",
             "",
-            "**Para atualizar:** descompacte a versão nova por cima da pasta antiga, substituindo os arquivos. Suas configurações e o histórico continuam."
+            "**Dica:** clique com o botão direito no **Puxai.exe** → **Enviar para → Área de trabalho (criar atalho)**.",
+            "",
+            "**Para atualizar:** o Puxaí avisa quando sai versão nova. Baixe de novo pelo mesmo link e extraia por cima da pasta antiga, substituindo os arquivos. Suas configurações e o histórico continuam."
           )
           $notas -join "`n" | Set-Content notas.md -Encoding utf8
           exit 0
@@ -99,7 +122,7 @@ jobs:
         id: zip
         shell: pwsh
         run: |
-          $zip = "Puxai-${{ steps.versao.outputs.versao }}-windows.zip"
+          $zip = $env:ARQUIVO
           7z a -tzip -mx=7 $zip Puxai | Select-Object -Last 3
           "arquivo=$zip" >> $env:GITHUB_OUTPUT
           Write-Host ("Tamanho: {0:N0} MB" -f ((Get-Item $zip).Length / 1MB))
@@ -116,5 +139,12 @@ jobs:
         shell: pwsh
         run: |
           $versao = "${{ steps.versao.outputs.versao }}"
-          gh release create "v$versao" "${{ steps.zip.outputs.arquivo }}" `
-            --title "Puxaí $versao" --notes-file notas.md --target $env:GITHUB_SHA
+          if ("${{ steps.versao.outputs.existe }}" -eq "true") {
+            # Release já existe (Run workflow com "publicar"): troca o .zip e o texto
+            gh release upload "v$versao" "${{ steps.zip.outputs.arquivo }}" --clobber
+            gh release edit "v$versao" --notes-file notas.md
+          } else {
+            gh release create "v$versao" "${{ steps.zip.outputs.arquivo }}" `
+              --title "Puxaí $versao" --notes-file notas.md --target $env:GITHUB_SHA
+          }
+          Write-Host "Link direto (sempre a versão mais nova): $env:LINK_DIRETO"

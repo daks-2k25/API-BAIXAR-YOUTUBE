@@ -1,10 +1,23 @@
 # Puxaí
 
-Aplicação em Python para baixar vídeos do **YouTube**, **TikTok** e **Instagram** em **MP4** ou extrair o áudio em **MP3**, além de converter e comprimir fotos (**HEIC**, **JPG**, **PNG** e **WebP**). Abre numa **janela própria**, com uma **API REST** por trás, feita com Flask e [yt-dlp](https://github.com/yt-dlp/yt-dlp).
+Programa para Windows que baixa vídeos do **YouTube**, **TikTok**, **Instagram** e de mais de mil sites em **MP4** ou extrai o áudio em **MP3**, além de converter e comprimir fotos e vídeos. Abre numa **janela própria**, com uma **API REST** por trás, feita em Python com Flask e [yt-dlp](https://github.com/yt-dlp/yt-dlp).
 
-## Baixar o programa pronto (Windows)
+## ⬇ Baixar o Puxaí (Windows)
 
-O jeito mais simples: na página [**Releases**](https://github.com/daks-2k25/API-BAIXAR-YOUTUBE/releases/latest), baixe o **Puxai-X.Y.Z-windows.zip**, descompacte e abra o **Puxai.exe**. Não precisa instalar nada (nem Python, nem FFmpeg). Para atualizar, descompacte a versão nova por cima da pasta antiga.
+### **[Clique aqui para baixar o Puxaí](https://github.com/daks-2k25/API-BAIXAR-YOUTUBE/releases/latest/download/Puxai-windows.zip)**
+
+Esse link baixa sempre a **versão mais nova**. Não precisa ter conta no GitHub.
+
+1. **Baixe** pelo link acima (o arquivo **Puxai-windows.zip**, cerca de 100 MB).
+2. Clique com o botão direito no arquivo baixado e escolha **Extrair tudo**.
+3. Abra a pasta **Puxai** e dê dois cliques em **Puxai.exe**. Não precisa instalar nada (nem Python, nem FFmpeg: tudo vem junto).
+4. Se o Windows mostrar **"O Windows protegeu o computador"**, clique em **Mais informações → Executar assim mesmo**. O aviso aparece porque o programa não tem assinatura digital (que é paga), não porque tenha algo errado.
+
+**Dica:** clique com o botão direito no **Puxai.exe** → **Enviar para → Área de trabalho (criar atalho)**, para abrir pela Área de Trabalho.
+
+**Para atualizar:** o Puxaí avisa quando sai uma versão nova. Baixe de novo pelo mesmo link e extraia **por cima** da pasta antiga, substituindo os arquivos. Suas configurações e o histórico continuam.
+
+As novidades de cada versão ficam na página [**Releases**](https://github.com/daks-2k25/API-BAIXAR-YOUTUBE/releases).
 
 ## Início rápido pelo código (Windows)
 
@@ -171,7 +184,11 @@ Para conferir o programa gerado: `powershell -File ferramentas\testar_exe.ps1`. 
 
 Sempre que a versão muda no `versao.json` e vai para a `main`, o GitHub gera o programa sozinho (`.github/workflows/gerar-exe.yml`): baixa o FFmpeg (conferindo o SHA-256), roda o mesmo `gerar_exe.bat`, testa com o `testar_exe.ps1` e publica o `.zip` numa **Release** `vX.Y.Z`, com as novidades da versão. Só publica se o teste passar e se ainda não existir uma Release dessa versão.
 
-Para testar sem publicar: aba **Actions → Gerar o Puxai.exe → Run workflow**. O `.zip` fica para baixar em **Artifacts**, na página da execução, por 7 dias.
+O arquivo se chama sempre **`Puxai-windows.zip`** (sem a versão no nome), por isso o link `https://github.com/daks-2k25/API-BAIXAR-YOUTUBE/releases/latest/download/Puxai-windows.zip` baixa sempre a versão mais nova, direto. É o link para divulgar (site, WhatsApp, redes sociais).
+
+Pela aba **Actions → Gerar o Puxai.exe → Run workflow**:
+- **Sem marcar "publicar":** só gera e testa. O `.zip` fica para baixar em **Artifacts**, na página da execução, por 7 dias.
+- **Marcando "publicar":** gera, testa e coloca o `.zip` na Release da versão atual (cria a Release, ou troca o arquivo e o texto se ela já existir). Útil para refazer o `.zip` de uma versão já lançada.
 
 ## Rodando em outros sistemas (Linux/macOS)
 
