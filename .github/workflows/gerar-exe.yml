@@ -122,11 +122,30 @@ jobs:
         run: |
           # O build "essentials" do gyan.dev, baixado do espelho que o próprio autor mantém
           # no GitHub (o site dele é lento demais para isto) e conferido com o SHA-256
-          # publicado no site oficial
+          # publicado no site oficial. Se o site não responder (já aconteceu), usa o
+          # SHA-256 que o GitHub calcula para o mesmo arquivo do espelho.
           $versao = gh release view --repo GyanD/codexffmpeg --json tagName -q .tagName
-          gh release download $versao --repo GyanD/codexffmpeg --pattern "ffmpeg-$versao-essentials_build.zip" --output ffmpeg.zip
-          Invoke-WebRequest "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-$versao-essentials_build.zip.sha256" -OutFile ffmpeg.zip.sha256
-          $esperado = ((Get-Content ffmpeg.zip.sha256 -Raw).Trim() -split '\s+')[0].ToUpper()
+          $nome = "ffmpeg-$versao-essentials_build.zip"
+          gh release download $versao --repo GyanD/codexffmpeg --pattern $nome --output ffmpeg.zip
+          if ($LASTEXITCODE -ne 0) { throw "Não consegui baixar o $nome do GitHub" }
+
+          $esperado = $null
+          for ($tentativa = 1; $tentativa -le 3 -and -not $esperado; $tentativa++) {
+            try {
+              $texto = (Invoke-WebRequest "https://www.gyan.dev/ffmpeg/builds/packages/$nome.sha256" -TimeoutSec 30 -UseBasicParsing).Content
+              $esperado = ([string]$texto).Trim().Split()[0].ToUpper()
+            } catch {
+              Write-Host "gyan.dev não respondeu (tentativa $tentativa): $($_.Exception.Message)"
+              Start-Sleep -Seconds 5
+            }
+          }
+          if (-not $esperado) {
+            $release = gh api "repos/GyanD/codexffmpeg/releases/tags/$versao" | ConvertFrom-Json
+            $digest = [string]($release.assets | Where-Object name -eq $nome).digest
+            if ($digest -notmatch '^sha256:') { throw "Não consegui o SHA-256 do FFmpeg nem do gyan.dev nem do GitHub" }
+            $esperado = $digest.Substring(7).ToUpper()
+            Write-Host "Usando o SHA-256 informado pelo GitHub."
+          }
           $obtido = (Get-FileHash ffmpeg.zip -Algorithm SHA256).Hash
           if ($obtido -ne $esperado) { throw "O SHA-256 do FFmpeg não confere: $obtido (esperado $esperado)" }
 
