@@ -18,8 +18,29 @@ PASTA_PAINEL = os.path.join(PASTA_RECURSOS, "painel")
 PASTA_DOWNLOADS = os.path.join(PASTA_BASE, "downloads")
 
 
+def _pasta_downloads_do_linux():
+    """A pasta Downloads do Linux, com o nome que o sistema usa (ex.: "Transferências").
+    Fica em ~/.config/user-dirs.dirs, numa linha XDG_DOWNLOAD_DIR="$HOME/Downloads"."""
+    configuracao = os.environ.get("XDG_CONFIG_HOME") or os.path.join(os.path.expanduser("~"), ".config")
+    try:
+        with open(os.path.join(configuracao, "user-dirs.dirs"), encoding="utf-8") as f:
+            for linha in f:
+                if linha.startswith("XDG_DOWNLOAD_DIR="):
+                    pasta = linha.split("=", 1)[1].strip().strip('"').replace("$HOME", os.path.expanduser("~"))
+                    # "$HOME/" sozinho quer dizer "sem pasta Downloads": usa a padrão
+                    if os.path.isabs(pasta) and os.path.normpath(pasta) != os.path.expanduser("~"):
+                        return pasta
+    except OSError:
+        pass
+    return None
+
+
 def _pasta_downloads_do_usuario():
-    """A pasta Downloads do Windows, mesmo se o usuário a moveu (outro disco, OneDrive...)."""
+    """A pasta Downloads do usuário, mesmo se ele a moveu (outro disco, OneDrive...)."""
+    if sys.platform.startswith("linux"):
+        pasta = _pasta_downloads_do_linux()
+        if pasta:
+            return pasta
     if sys.platform == "win32":
         try:
             import ctypes
@@ -59,6 +80,10 @@ if sys.stdout is None or sys.stderr is None:
     sys.stdout = sys.stdout or registro
     sys.stderr = sys.stderr or registro
 
-# Se tiver um ffmpeg.exe ao lado do programa, usa ele (não precisa instalar no PC)
-if os.path.exists(os.path.join(PASTA_BASE, "ffmpeg.exe")):
-    os.environ["PATH"] = PASTA_BASE + os.pathsep + os.environ.get("PATH", "")
+# Se tiver o FFmpeg ao lado do programa, usa ele (não precisa instalar no PC).
+# No Linux, o iniciar.sh baixa o FFmpeg para a pasta .ffmpeg se o sistema não tiver.
+# No programa gerado para Linux, o Deno também fica ao lado (o yt-dlp procura no PATH).
+for _pasta in (PASTA_BASE, os.path.join(PASTA_BASE, ".ffmpeg")):
+    if os.path.exists(os.path.join(_pasta, "ffmpeg.exe" if sys.platform == "win32" else "ffmpeg")):
+        os.environ["PATH"] = _pasta + os.pathsep + os.environ.get("PATH", "")
+        break

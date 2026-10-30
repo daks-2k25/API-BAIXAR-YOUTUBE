@@ -19,7 +19,7 @@ import threading
 import webbrowser
 from ctypes import wintypes
 
-from servicos import destinos, programa
+from servicos import destinos, programa, sistema
 from servicos.caminhos import PASTA_PAINEL
 from servicos.downloader import quantos_em_andamento
 
@@ -121,7 +121,7 @@ class _Bandeja:
                 webbrowser.open(programa.ENDERECO_PAINEL)
             elif comando == PASTA:
                 pastas = destinos.configuracao()
-                os.startfile(destinos.pasta_para("video") if pastas["modo"] == "separadas" else pastas["tudo"])
+                sistema.abrir(destinos.pasta_para("video") if pastas["modo"] == "separadas" else pastas["tudo"])
             elif comando == ENCERRAR:
                 quantos = quantos_em_andamento()
                 if quantos and user32.MessageBoxW(

@@ -17,3 +17,4 @@ uv.lock
 .preferencias.json
 .historico.json
 cookies.txt
+.ffmpeg/

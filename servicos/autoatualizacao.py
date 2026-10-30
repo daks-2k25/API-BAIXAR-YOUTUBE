@@ -10,8 +10,8 @@ GitHub e, se houver versão nova, oferece a atualização:
 - Programa gerado (Puxai.exe): o código está empacotado dentro dele;
   é preciso gerar o programa de novo.
 
-Depois de atualizar, o programa reinicia pelo iniciar.bat, que também instala
-bibliotecas novas, se a versão nova precisar.
+Depois de atualizar, o programa reinicia pelo iniciar.bat (iniciar.sh, no
+Linux), que também instala bibliotecas novas, se a versão nova precisar.
 """
 import io
 import json
@@ -40,7 +40,8 @@ ARQUIVO_MANIFESTO = os.path.join(PASTA_PROJETO, ".arquivos_do_programa.txt")
 # Pastas e arquivos da pessoa que a atualização nunca toca
 PROTEGIDOS = (
     # "BaixarYouTube": pasta do programa gerado antes de o app se chamar Puxaí
-    ".git", ".ambiente", ".venv", "downloads", "Puxai", "BaixarYouTube", "atualizacoes",
+    # ".ffmpeg": o FFmpeg que o iniciar.sh baixa no Linux
+    ".git", ".ambiente", ".venv", ".ffmpeg", "downloads", "Puxai", "BaixarYouTube", "atualizacoes",
     "ferramentas/compilacao", ".atalho_criado", ".arquivos_do_programa.txt",
     ".preferencias.json", ".historico.json", "cookies.txt",
 )
@@ -210,8 +211,13 @@ def aplicar():
 
 
 def reiniciar():
-    """Abre o iniciar.bat daqui a 2 segundos (tempo de este processo fechar).
-    O iniciar.bat instala bibliotecas novas, se houver, e abre o programa de novo."""
+    """Abre o iniciar.bat (ou iniciar.sh) daqui a 2 segundos (tempo de este processo fechar).
+    Ele instala bibliotecas novas, se houver, e abre o programa de novo."""
+    if sys.platform != "win32":
+        # "sh iniciar.sh" e não "./iniciar.sh": a atualização pelo ZIP não guarda a permissão de executar
+        subprocess.Popen(["sh", "-c", 'sleep 2; exec sh "$0"', os.path.join(PASTA_PROJETO, "iniciar.sh")],
+                         cwd=PASTA_PROJETO, start_new_session=True, close_fds=True)
+        return
     iniciar = os.path.join(PASTA_PROJETO, "iniciar.bat")
     sem_janela = getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
     # "ping" para esperar: o "timeout" do Windows falha quando não há janela de console

@@ -1352,10 +1352,10 @@ botaoConfig.addEventListener("click", (evento) => {
 });
 
 // ==========================================
-// CONFIGURAÇÕES: tema claro, escuro ou automático (segue o Windows)
+// CONFIGURAÇÕES: tema claro, escuro ou automático (segue o sistema)
 // ==========================================
 // A página já chega do programa com data-tema="claro"|"escuro" (sem piscar o
-// tema errado). Aqui só troca na hora e acompanha o Windows no automático.
+// tema errado). Aqui só troca na hora e acompanha o sistema no automático.
 const raiz = document.documentElement;
 const dicaTema = document.getElementById("config-tema-dica");
 const sistemaEscuro = window.matchMedia("(prefers-color-scheme: dark)");
@@ -1367,11 +1367,11 @@ function aplicarTema(escolhido) {
         chip.classList.toggle("ativo", chip.dataset.tema === escolhido);
     });
     dicaTema.textContent = escolhido === "automatico"
-        ? `Segue o Windows (agora: ${raiz.dataset.tema === "escuro" ? "escuro" : "claro"}).`
+        ? `Segue o sistema (agora: ${raiz.dataset.tema === "escuro" ? "escuro" : "claro"}).`
         : "";
 }
 
-// Automático: o Windows mudou de claro para escuro (ou o contrário) com o Puxaí aberto
+// Automático: o sistema mudou de claro para escuro (ou o contrário) com o Puxaí aberto
 sistemaEscuro.addEventListener("change", () => {
     if (raiz.dataset.temaEscolhido === "automatico") aplicarTema("automatico");
 });

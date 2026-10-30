@@ -1,12 +1,7 @@
 {
-  "versao": "2.2.0",
+  "versao": "2.3.0",
   "novidades": [
-    "Novo nome: Puxaí",
-    "Baixa de mais de mil sites (X, Facebook, Twitch, SoundCloud...), playlists e canais inteiros, escolhendo os vídeos",
-    "Vários links de uma vez, e aviso quando você copia um link de vídeo",
-    "MP3 com capa, título e artista",
-    "Comprimir vídeos (para caber no WhatsApp, Discord ou e-mail) e fotos, e converter fotos para WebP",
-    "Meus downloads: lista de tudo o que você baixou",
-    "Tema escuro, ícone perto do relógio e escolha da pasta onde salvar"
+    "Versão para Linux: programa pronto para baixar (Ubuntu, Debian, Fedora, Mint...) ou pelo iniciar.sh",
+    "No Linux: janela própria, atalho no menu de aplicativos, tema escuro automático e aviso de link copiado"
   ]
 }

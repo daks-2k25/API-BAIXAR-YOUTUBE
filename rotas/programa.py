@@ -1,10 +1,9 @@
 """O programa em si: janela ou navegador, preferências e encerrar."""
 import threading
-import webbrowser
 
 from flask import Blueprint, jsonify, request
 
-from servicos import destinos, preferencias, programa
+from servicos import destinos, preferencias, programa, sistema
 from servicos.janela import barra_de_titulo_escura, trazer_para_frente
 
 rotas = Blueprint("programa", __name__)
@@ -39,7 +38,7 @@ def focar_api():
     if programa.janela is not None:
         trazer_para_frente()
     else:
-        webbrowser.open(programa.ENDERECO_PAINEL)
+        sistema.abrir_no_navegador(programa.ENDERECO_PAINEL)
     return jsonify({"ok": True})
 
 
@@ -47,7 +46,7 @@ def dados_das_preferencias():
     return {
         "modo_abertura": preferencias.modo_de_abertura(),
         "tema": preferencias.tema(),               # o escolhido: automatico, claro ou escuro
-        "tema_em_uso": preferencias.tema_em_uso(),  # claro ou escuro (automático = o do Windows)
+        "tema_em_uso": preferencias.tema_em_uso(),  # claro ou escuro (automático = o do sistema)
         "detectar_link": preferencias.detectar_link(),  # avisar quando copiar um link de vídeo
     }
 
@@ -113,7 +112,7 @@ def abrir_no_navegador_api():
     if programa.janela is not None:
         programa.trocando_para_navegador = True
         threading.Timer(0.3, programa.janela.destroy).start()
-    webbrowser.open(programa.ENDERECO_PAINEL)
+    sistema.abrir_no_navegador(programa.ENDERECO_PAINEL)
     return jsonify({"ok": True})
 
 

@@ -1,16 +1,20 @@
 """Link de vídeo copiado (o painel oferece "Colar" quando você copia um link).
 
-Lê o texto da área de transferência do Windows direto (o programa roda no
+Lê o texto da área de transferência do sistema direto (o programa roda no
 mesmo computador), em vez de pedir ao navegador, que perguntaria permissão
-toda vez. Só devolve algo se o texto copiado for um link de um site que o
+toda vez. No Linux, pelo xclip, xsel ou wl-paste (o que estiver instalado). Só devolve algo se o texto copiado for um link de um site que o
 yt-dlp sabe baixar; qualquer outro texto copiado (senhas, mensagens...) não
 sai daqui nem fica guardado.
 """
 import ctypes
+import os
 import re
+import shutil
+import subprocess
 import sys
 import time
 
+from servicos import sistema
 from servicos.sites import nome_amigavel
 
 CF_UNICODETEXT = 13
@@ -23,6 +27,8 @@ _cache = {}
 
 def ler_texto():
     """O texto copiado agora (ou None: nada copiado, não é texto ou não deu para ler)."""
+    if sys.platform.startswith("linux"):
+        return _ler_texto_no_linux()
     if sys.platform != "win32":
         return None
     from ctypes import wintypes
@@ -60,6 +66,32 @@ def ler_texto():
             kernel32.GlobalUnlock(dados)
     finally:
         user32.CloseClipboard()
+
+
+# No Linux, a área de transferência é lida por um programa pequeno. Com o Wayland
+# (GNOME e KDE novos), xclip e xsel leem a do Xwayland, que o sistema mantém
+# igual à do Wayland; o wl-paste fica por último porque no GNOME ele abre uma
+# janelinha por um instante para conseguir ler.
+COMANDOS_LINUX = (
+    ("DISPLAY", ["xclip", "-selection", "clipboard", "-out", "-target", "UTF8_STRING"]),
+    ("DISPLAY", ["xsel", "--clipboard", "--output"]),
+    ("WAYLAND_DISPLAY", ["wl-paste", "--no-newline", "--type", "text/plain;charset=utf-8"]),
+)
+
+
+def _ler_texto_no_linux():
+    for tela, comando in COMANDOS_LINUX:
+        if not os.environ.get(tela) or not shutil.which(comando[0]):
+            continue
+        try:
+            resultado = sistema.rodar(comando, capture_output=True, timeout=2)
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        if resultado.returncode == 0:
+            if len(resultado.stdout) > TAMANHO_MAXIMO * 4:  # até 4 bytes por letra (UTF-8)
+                return None
+            return resultado.stdout.decode("utf-8", errors="replace")
+    return None
 
 
 def _site_do_link(url):

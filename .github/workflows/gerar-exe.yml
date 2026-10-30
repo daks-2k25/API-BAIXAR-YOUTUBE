@@ -1,19 +1,23 @@
-# Gera o programa para Windows (Puxai.exe, com o FFmpeg junto) e publica
-# numa Release do GitHub, para quem quiser só baixar e usar.
+# Gera o programa para Windows (Puxai.exe) e para Linux, com o FFmpeg junto,
+# e publica numa Release do GitHub, para quem quiser só baixar e usar.
 #
 # - Sozinho: quando a versão muda no versao.json (push na main). Se a Release
 #   dessa versão já existir (ex.: mudou só o texto das novidades), não publica.
-# - Pelo botão "Run workflow" (aba Actions): só gera e testa; o .zip fica para
-#   baixar em "Artifacts", na página da execução. Marcando "publicar", também
-#   coloca o .zip na Release da versão atual (cria a Release ou troca o arquivo).
+# - Pelo botão "Run workflow" (aba Actions): só gera e testa; os arquivos ficam
+#   para baixar em "Artifacts", na página da execução. Marcando "publicar",
+#   também coloca na Release da versão atual (cria a Release ou troca os arquivos).
 #
-# O arquivo tem sempre o mesmo nome (Puxai-windows.zip), então este link baixa
-# sempre a versão mais nova, direto:
+# Os arquivos têm sempre o mesmo nome, então estes links baixam sempre a versão
+# mais nova, direto:
 #   https://github.com/daks-2k25/API-BAIXAR-YOUTUBE/releases/latest/download/Puxai-windows.zip
+#   https://github.com/daks-2k25/API-BAIXAR-YOUTUBE/releases/latest/download/Puxai-linux.tar.xz
 #
-# A receita é a mesma do ferramentas\gerar_exe.bat (usado aqui) e o teste é o
-# ferramentas\testar_exe.ps1: o que roda no seu PC é o que roda aqui.
-name: Gerar o Puxai.exe
+# A receita é a mesma do ferramentas\gerar_exe.bat (Windows) e do
+# ferramentas/gerar_linux.sh (Linux), e os testes são o ferramentas\testar_exe.ps1
+# e o ferramentas/testar_linux.sh: o que roda no seu PC é o que roda aqui.
+#
+# Se só o Linux falhar, a Release sai com o Windows mesmo assim.
+name: Gerar o Puxaí (Windows e Linux)
 
 on:
   push:
@@ -22,14 +26,16 @@ on:
   workflow_dispatch:
     inputs:
       publicar:
-        description: "Publicar na Release da versão atual (cria a Release ou troca o .zip dela)"
+        description: "Publicar na Release da versão atual (cria a Release ou troca os arquivos dela)"
         type: boolean
         default: false
 
 env:
-  # Sempre o mesmo nome: o link .../releases/latest/download/Puxai-windows.zip não muda
-  ARQUIVO: Puxai-windows.zip
-  LINK_DIRETO: https://github.com/daks-2k25/API-BAIXAR-YOUTUBE/releases/latest/download/Puxai-windows.zip
+  # Sempre os mesmos nomes: os links .../releases/latest/download/... não mudam
+  ARQUIVO_WINDOWS: Puxai-windows.zip
+  ARQUIVO_LINUX: Puxai-linux.tar.xz
+  LINK_WINDOWS: https://github.com/daks-2k25/API-BAIXAR-YOUTUBE/releases/latest/download/Puxai-windows.zip
+  LINK_LINUX: https://github.com/daks-2k25/API-BAIXAR-YOUTUBE/releases/latest/download/Puxai-linux.tar.xz
 
 permissions:
   contents: write  # criar a Release e a tag da versão
@@ -39,11 +45,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  gerar:
-    runs-on: windows-latest
-    timeout-minutes: 30
+  versao:
+    runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
+    outputs:
+      versao: ${{ steps.versao.outputs.versao }}
+      publicar: ${{ steps.versao.outputs.publicar }}
+      existe: ${{ steps.versao.outputs.existe }}
 
     steps:
       - uses: actions/checkout@v4
@@ -69,19 +78,42 @@ jobs:
 
           $notas = @("## Novidades", "") + ($dados.novidades | ForEach-Object { "- $_" }) + @(
             "",
-            "## Como baixar e usar",
+            "## Como baixar e usar no Windows",
             "",
-            "1. **[Clique aqui para baixar o Puxaí]($env:LINK_DIRETO)** (ou baixe o **$env:ARQUIVO** aqui embaixo, em *Assets*).",
+            "1. **[Clique aqui para baixar o Puxaí para Windows]($env:LINK_WINDOWS)** (ou baixe o **$env:ARQUIVO_WINDOWS** aqui embaixo, em *Assets*).",
             "2. Clique com o botão direito no arquivo baixado e escolha **Extrair tudo**.",
             "3. Abra a pasta **Puxai** e dê dois cliques em **Puxai.exe**. Não precisa instalar nada: o FFmpeg já vem junto.",
             "4. Se o Windows mostrar ""O Windows protegeu o computador"", clique em **Mais informações → Executar assim mesmo** (o aviso aparece porque o programa não tem assinatura digital paga).",
             "",
             "**Dica:** clique com o botão direito no **Puxai.exe** → **Enviar para → Área de trabalho (criar atalho)**.",
             "",
+            "## Como baixar e usar no Linux",
+            "",
+            "1. **[Clique aqui para baixar o Puxaí para Linux]($env:LINK_LINUX)** (ou baixe o **$env:ARQUIVO_LINUX** aqui embaixo, em *Assets*). Para PCs de 64 bits (x86_64) com Ubuntu 22.04, Debian 12, Fedora 37 ou mais novos.",
+            "2. Extraia o arquivo (botão direito → **Extrair aqui**, ou ``tar -xJf $env:ARQUIVO_LINUX`` no terminal).",
+            "3. Abra a pasta **Puxai** e dê dois cliques em **Puxai** (ou rode ``./Puxai/Puxai``). Não precisa instalar nada: o FFmpeg e o Deno já vêm junto.",
+            "4. Na primeira vez, o Puxaí cria o atalho **Puxaí** no menu de aplicativos. Depois é só abrir por ele.",
+            "",
             "**Para atualizar:** o Puxaí avisa quando sai versão nova. Baixe de novo pelo mesmo link e extraia por cima da pasta antiga, substituindo os arquivos. Suas configurações e o histórico continuam."
           )
           $notas -join "`n" | Set-Content notas.md -Encoding utf8
           exit 0
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: notas
+          path: notas.md
+          retention-days: 1
+
+  windows:
+    needs: versao
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - uses: actions/checkout@v4
 
       - uses: astral-sh/setup-uv@v6
 
@@ -119,32 +151,113 @@ jobs:
         run: ./ferramentas/testar_exe.ps1
 
       - name: Compactar
-        id: zip
         shell: pwsh
         run: |
-          $zip = $env:ARQUIVO
-          7z a -tzip -mx=7 $zip Puxai | Select-Object -Last 3
-          "arquivo=$zip" >> $env:GITHUB_OUTPUT
-          Write-Host ("Tamanho: {0:N0} MB" -f ((Get-Item $zip).Length / 1MB))
+          7z a -tzip -mx=7 $env:ARQUIVO_WINDOWS Puxai | Select-Object -Last 3
+          Write-Host ("Tamanho: {0:N0} MB" -f ((Get-Item $env:ARQUIVO_WINDOWS).Length / 1MB))
 
       - name: Guardar o .zip nesta execução (para testar antes de publicar)
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.zip.outputs.arquivo }}
-          path: ${{ steps.zip.outputs.arquivo }}
+          name: ${{ env.ARQUIVO_WINDOWS }}
+          path: ${{ env.ARQUIVO_WINDOWS }}
           retention-days: 7
 
-      - name: Publicar a Release
-        if: steps.versao.outputs.publicar == 'true'
-        shell: pwsh
+  linux:
+    needs: versao
+    # O Ubuntu mais antigo disponível: o programa gerado funciona nos Linux com
+    # a mesma versão da glibc ou mais nova (Ubuntu 22.04, Debian 12, Fedora 37...)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Instalar o que o Qt precisa (e a tela virtual do teste da janela)
         run: |
-          $versao = "${{ steps.versao.outputs.versao }}"
-          if ("${{ steps.versao.outputs.existe }}" -eq "true") {
-            # Release já existe (Run workflow com "publicar"): troca o .zip e o texto
-            gh release upload "v$versao" "${{ steps.zip.outputs.arquivo }}" --clobber
-            gh release edit "v$versao" --notes-file notas.md
-          } else {
-            gh release create "v$versao" "${{ steps.zip.outputs.arquivo }}" `
-              --title "Puxaí $versao" --notes-file notas.md --target $env:GITHUB_SHA
-          }
-          Write-Host "Link direto (sempre a versão mais nova): $env:LINK_DIRETO"
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends xvfb libegl1 libgl1 libxkbcommon-x11-0 \
+            libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 \
+            libxcb-shape0 libxcb-xinerama0 libxcb-xkb1 libnss3 libxcomposite1 libxdamage1 libxrandr2 \
+            libxtst6 libxkbfile1 libasound2
+
+      - name: Baixar o FFmpeg (conferindo o SHA-256)
+        run: |
+          # Build estático do BtbN (o mesmo que o iniciar.sh baixa), conferido com o
+          # SHA-256 publicado junto
+          nome=ffmpeg-master-latest-linux64-gpl.tar.xz
+          endereco=https://github.com/BtbN/FFmpeg-Builds/releases/download/latest
+          curl -fsSL --retry 2 -o "$nome" "$endereco/$nome"
+          curl -fsSL --retry 2 -o checksums.sha256 "$endereco/checksums.sha256"
+          grep " $nome\$" checksums.sha256 | sha256sum -c
+          tar -xJf "$nome"
+          bin=$(pwd)/ffmpeg-master-latest-linux64-gpl/bin
+          "$bin/ffmpeg" -hide_banner -version | head -n 1
+
+          # O programa precisa destes codificadores: vídeo H.264, MP3 e WebP
+          codificadores=$("$bin/ffmpeg" -hide_banner -encoders)
+          for nome in libx264 libmp3lame libwebp; do
+            printf '%s\n' "$codificadores" | grep -q " $nome " || { echo "O FFmpeg baixado não tem o $nome"; exit 1; }
+          done
+          # Na frente do PATH: é este que o gerar_linux.sh copia para dentro do programa
+          echo "$bin" >> "$GITHUB_PATH"
+
+      - name: Gerar o programa
+        run: sh ferramentas/gerar_linux.sh
+
+      - name: Testar o programa gerado
+        run: sh ferramentas/testar_linux.sh
+
+      - name: Compactar
+        run: |
+          XZ_OPT="-6 -T0" tar -cJf "$ARQUIVO_LINUX" Puxai
+          echo "Tamanho: $(( $(stat -c %s "$ARQUIVO_LINUX") / 1048576 )) MB"
+
+      - name: Guardar o .tar.xz nesta execução (para testar antes de publicar)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARQUIVO_LINUX }}
+          path: ${{ env.ARQUIVO_LINUX }}
+          retention-days: 7
+
+  publicar:
+    needs: [versao, windows, linux]
+    # Publica com o Windows pronto, mesmo que o Linux tenha falhado
+    if: ${{ !cancelled() && needs.versao.outputs.publicar == 'true' && needs.windows.result == 'success' }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: arquivos
+          merge-multiple: true
+
+      - name: Publicar a Release
+        run: |
+          versao="${{ needs.versao.outputs.versao }}"
+          set -- "arquivos/$ARQUIVO_WINDOWS"
+          if [ -f "arquivos/$ARQUIVO_LINUX" ]; then
+            set -- "$@" "arquivos/$ARQUIVO_LINUX"
+          else
+            echo "::warning::O programa para Linux não foi gerado; a Release sai só com o Windows."
+          fi
+
+          if [ "${{ needs.versao.outputs.existe }}" = "true" ]; then
+            # Release já existe (Run workflow com "publicar"): troca os arquivos e o texto
+            gh release upload "v$versao" "$@" --clobber --repo "$GITHUB_REPOSITORY"
+            gh release edit "v$versao" --notes-file arquivos/notas.md --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "v$versao" "$@" --repo "$GITHUB_REPOSITORY" \
+              --title "Puxaí $versao" --notes-file arquivos/notas.md --target "$GITHUB_SHA"
+          fi
+          echo "Links diretos (sempre a versão mais nova):"
+          echo "  $LINK_WINDOWS"
+          echo "  $LINK_LINUX"

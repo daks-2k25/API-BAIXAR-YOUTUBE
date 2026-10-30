@@ -61,18 +61,27 @@ def esperar_porta_livre(limite_segundos=15):
         time.sleep(0.2)
 
 
+def comando_do_programa():
+    """(pasta, [comando]) para abrir este programa de novo: o Puxai.exe ou "python app.py"."""
+    if EXECUTAVEL:
+        return os.path.dirname(sys.executable), [sys.executable]
+    return os.path.dirname(ARQUIVO_PRINCIPAL), [sys.executable, ARQUIVO_PRINCIPAL]
+
+
 def reiniciar(modo):
     """Abre o programa de novo daqui a ~2 segundos (tempo de este processo fechar),
     já no modo pedido ("janela" ou "navegador")."""
-    if EXECUTAVEL:
-        pasta, comando = os.path.dirname(sys.executable), f'"{sys.executable}"'
-    else:
-        pasta = os.path.dirname(ARQUIVO_PRINCIPAL)
-        comando = f'"{sys.executable}" "{ARQUIVO_PRINCIPAL}"'
+    pasta, comando = comando_do_programa()
+    ambiente = dict(os.environ, PUXAI_MODO=modo)
+    if sys.platform != "win32":
+        subprocess.Popen(["sh", "-c", 'sleep 2; exec "$@"', "puxai", *comando],
+                         cwd=pasta, env=ambiente, start_new_session=True)
+        return
+    comando = " ".join(f'"{parte}"' for parte in comando)
     # "ping" para esperar: o "timeout" do Windows falha quando não há janela de console
     subprocess.Popen(
         f'cmd /c ping -n 3 127.0.0.1 >nul & start "" {comando}',
-        cwd=pasta, env=dict(os.environ, PUXAI_MODO=modo),
+        cwd=pasta, env=ambiente,
         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
     )
 

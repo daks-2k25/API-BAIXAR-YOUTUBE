@@ -9,9 +9,11 @@ Se a pasta escolhida sumir (ex.: pendrive ou HD externo desconectado), o
 arquivo vai para Downloads em vez de se perder.
 """
 import os
+import shutil
+import sys
 import threading
 
-from servicos import preferencias
+from servicos import preferencias, sistema
 from servicos.caminhos import PASTA_DESTINO
 
 MODOS = ("uma", "separadas")
@@ -65,9 +67,10 @@ def salvar(novos):
 
 
 def escolher_pasta(inicial=None):
-    """Abre a janela do Windows para escolher uma pasta. Devolve o caminho ou
+    """Abre a janela do sistema para escolher uma pasta. Devolve o caminho ou
     None (se a pessoa cancelar). Na janela do aplicativo usa a do pywebview
-    (fica presa à janela); no navegador, a do tkinter (que vem com o Python)."""
+    (fica presa à janela); no navegador, a do tkinter (que vem com o Python)
+    ou, no Linux, a do zenity (GNOME) ou do kdialog (KDE), se houver."""
     inicial = inicial if inicial and os.path.isdir(inicial) else PASTA_DESTINO
     with _trava_janela:
         from servicos import programa
@@ -76,9 +79,32 @@ def escolher_pasta(inicial=None):
             tipo = webview.FileDialog.FOLDER if hasattr(webview, "FileDialog") else webview.FOLDER_DIALOG
             escolhida = programa.janela.create_file_dialog(tipo, directory=inicial)
             pasta = escolhida[0] if escolhida else None
+        elif sys.platform.startswith("linux") and _programa_de_escolher_pasta():
+            pasta = _escolher_no_linux(inicial)
         else:
             pasta = _escolher_com_tkinter(inicial)
     return os.path.normpath(pasta) if pasta else None
+
+
+def _programa_de_escolher_pasta():
+    """O zenity ou o kdialog (o da área de trabalho em uso primeiro), ou None."""
+    kde = "KDE" in os.environ.get("XDG_CURRENT_DESKTOP", "").upper()
+    for nome in (("kdialog", "zenity") if kde else ("zenity", "kdialog")):
+        if shutil.which(nome):
+            return nome
+    return None
+
+
+def _escolher_no_linux(inicial):
+    titulo = "Puxaí: escolha a pasta para salvar"
+    if _programa_de_escolher_pasta() == "kdialog":
+        comando = ["kdialog", "--title", titulo, "--getexistingdirectory", inicial]
+    else:
+        comando = ["zenity", "--file-selection", "--directory", f"--title={titulo}",
+                   f"--filename={os.path.join(inicial, '')}"]
+    resultado = sistema.rodar(comando, capture_output=True, text=True)
+    # Código 1 = a pessoa cancelou
+    return resultado.stdout.strip() if resultado.returncode == 0 else None
 
 
 def _escolher_com_tkinter(inicial):

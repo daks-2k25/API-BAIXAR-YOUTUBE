@@ -1,4 +1,4 @@
-"""Puxaí: início do programa (iniciar.bat, atalho, Puxai.exe ou "uv run app.py").
+"""Puxaí: início do programa (iniciar.bat, iniciar.sh, atalho, Puxai.exe ou "uv run app.py").
 
 Liga o servidor do painel e abre a janela do aplicativo ou o navegador.
 O resto fica organizado em pastas:
@@ -11,13 +11,20 @@ import os
 import sys
 import threading
 import urllib.request
-import webbrowser
+
+# Linux: o programa se abre assim por um instante, antes de abrir a janela
+# própria, para conferir se ela funciona neste PC (veja servicos/janela.py)
+if "--testar-janela" in sys.argv:
+    from qtpy import QtWebEngineWidgets  # noqa: F401
+    from qtpy.QtWidgets import QApplication
+    QApplication([])
+    sys.exit(0)
 
 from servicos import atualizador
 atualizador.usar_versao_atualizada()  # Precisa vir antes de qualquer import do yt-dlp
 
 from rotas import criar_app
-from servicos import bandeja, preferencias, programa
+from servicos import atalho, preferencias, programa, sistema
 from servicos.janela import abrir_janela
 
 app = criar_app()
@@ -38,7 +45,7 @@ def usar_navegador(servidor, abrir=True):
     programa.painel_deu_sinal()
     print(f"Painel no navegador: {programa.ENDERECO_PAINEL}")
     if abrir:
-        webbrowser.open(programa.ENDERECO_PAINEL)
+        sistema.abrir_no_navegador(programa.ENDERECO_PAINEL)
     threading.Thread(target=programa.fechar_quando_ninguem_usar, daemon=True).start()
     servidor.join()
 
@@ -56,7 +63,7 @@ if __name__ == "__main__":
             pedido = urllib.request.Request(f"{programa.ENDERECO_PAINEL}/api/focar", method="POST")
             urllib.request.urlopen(pedido, timeout=3)
         except Exception:
-            webbrowser.open(programa.ENDERECO_PAINEL)
+            sistema.abrir_no_navegador(programa.ENDERECO_PAINEL)
         sys.exit(0)
 
     print("==========================================")
@@ -64,11 +71,16 @@ if __name__ == "__main__":
     print("==========================================")
 
     programa.limpar_sobras()  # temporários de uma vez anterior que fechou no meio de algo
+    atalho.criar()  # Linux: atalho "Puxaí" no menu de aplicativos (no Windows, quem cria é o iniciar.ps1)
 
     servidor = threading.Thread(target=iniciar_servidor, daemon=True)
     servidor.start()
     programa.esperar_servidor()
-    bandeja.iniciar()  # ícone perto do relógio (abrir, navegador, pasta, encerrar)
+    if sys.platform == "win32":
+        # Ícone perto do relógio (abrir, navegador, pasta, encerrar). Feito com as
+        # funções do Windows: nem dá para importar em outro sistema.
+        from servicos import bandeja
+        bandeja.iniciar()
     atualizador.verificar_atualizacao()  # Só faz algo dentro do .exe, uma vez por dia
 
     # Janela do aplicativo ou navegador: escolhido em Configurações (⚙) no painel.
@@ -79,7 +91,7 @@ if __name__ == "__main__":
         try:
             abrir_janela()
         except Exception as e:
-            # Sem a janela (ex.: WebView2 ausente), usa o navegador
+            # Sem a janela (ex.: WebView2 ausente, ou o Qt não abre no Linux), usa o navegador
             print(f"[JANELA] Não foi possível abrir a janela própria ({e}); usando o navegador.")
             usar_navegador(servidor)
         else:

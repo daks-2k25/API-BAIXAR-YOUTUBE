@@ -1,12 +1,10 @@
 """Arquivos já salvos: mostrar na pasta, abrir e a lista de "Meus downloads"."""
 import os
-import subprocess
-import sys
 
 from flask import Blueprint, jsonify
 
 from rotas.utilidades import caminho_do_arquivo
-from servicos import historico
+from servicos import historico, sistema
 
 rotas = Blueprint("arquivos", __name__)
 
@@ -15,23 +13,21 @@ NAO_ENCONTRADO = {"erro": "Arquivo não encontrado (foi movido ou apagado?)."}
 
 @rotas.route('/api/mostrar/<id_arquivo>', methods=['POST'])
 def mostrar_na_pasta_api(id_arquivo):
-    # Abre o Explorador de Arquivos com o arquivo baixado selecionado
+    # Abre a pasta (Explorador de Arquivos, no Windows) com o arquivo baixado selecionado
     caminho = caminho_do_arquivo(id_arquivo)
     if not caminho or not os.path.exists(caminho):
         return jsonify(NAO_ENCONTRADO), 404
-    if sys.platform == "win32":
-        subprocess.Popen(f'explorer /select,"{caminho}"')
+    sistema.mostrar_na_pasta(caminho)
     return jsonify({"mensagem": "Pasta aberta."})
 
 
 @rotas.route('/api/abrir/<id_arquivo>', methods=['POST'])
 def abrir_arquivo_api(id_arquivo):
-    # Abre o arquivo no programa padrão do Windows (player de vídeo, música, fotos)
+    # Abre o arquivo no programa padrão do sistema (player de vídeo, música, fotos)
     caminho = caminho_do_arquivo(id_arquivo)
     if not caminho or not os.path.exists(caminho):
         return jsonify(NAO_ENCONTRADO), 404
-    if sys.platform == "win32":
-        os.startfile(caminho)
+    sistema.abrir(caminho)
     return jsonify({"mensagem": "Arquivo aberto."})
 
 

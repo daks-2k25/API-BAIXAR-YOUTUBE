@@ -1,7 +1,7 @@
 [project]
 name = "puxai"
-version = "2.2.0"
-description = "Baixa vídeos do YouTube em MP4/MP3 e converte fotos para JPG e WebP, com painel próprio."
+version = "2.3.0"
+description = "Baixa vídeos do YouTube em MP4/MP3 e converte fotos para JPG e WebP, com painel próprio (Windows e Linux)."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -12,6 +12,10 @@ dependencies = [
     # [curl-cffi] faz o yt-dlp se passar por um navegador nos sites que bloqueiam
     # quem não é navegador ("TLS fingerprint").
     "yt-dlp[default,curl-cffi]",
+    # Linux: a janela própria usa o Qt (no Windows, o WebView2 que já vem no sistema)
+    "pywebview[qt]; sys_platform == 'linux'",
+    # Linux: o Deno vem junto pelo pip (no Windows, o iniciar.bat instala pelo winget)
+    "yt-dlp[deno]; sys_platform == 'linux'",
 ]
 
 [tool.uv]

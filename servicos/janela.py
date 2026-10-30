@@ -1,5 +1,10 @@
-"""Janela própria do programa (pywebview), com a logo na barra de tarefas."""
+"""Janela própria do programa (pywebview), com a logo na barra de tarefas.
+
+No Windows, a janela usa o WebView2 (o Edge que vem no sistema); no Linux, o Qt
+(que vem junto, pelo pywebview[qt]). Sem ela, o painel abre no navegador.
+"""
 import os
+import subprocess
 import sys
 
 from servicos import preferencias, programa
@@ -89,14 +94,39 @@ def colocar_icone_na_janela(titulo, caminho_icone):
             user32.PostMessageW(encontrada[0], WM_SETICON, tipo, icone)
 
 
+def _testar_janela_do_linux():
+    """Confere, num processo à parte, se a janela (Qt) abre neste PC.
+
+    Quando falta algo no sistema (ex.: a biblioteca libxcb-cursor0) ou não há
+    tela (servidor, SSH), o Qt encerra o programa inteiro na hora, sem dar para
+    tratar o erro. Testando antes, o programa só usa o navegador nesses casos.
+    """
+    pasta, comando = programa.comando_do_programa()
+    try:
+        resultado = subprocess.run([*comando, "--testar-janela"], cwd=pasta,
+                                   capture_output=True, text=True, errors="replace", timeout=30)
+    except (OSError, subprocess.TimeoutExpired) as e:
+        raise RuntimeError(f"o teste da janela não terminou: {e}")
+    if resultado.returncode != 0:
+        detalhe = (resultado.stderr.strip().splitlines() or [f"código {resultado.returncode}"])[-1]
+        raise RuntimeError(f"o Qt não abriu: {detalhe}")
+
+
 def abrir_janela():
     """Abre o painel numa janela própria. Bloqueia até a janela ser fechada."""
+    if sys.platform.startswith("linux"):
+        _testar_janela_do_linux()
+
     import webview
 
     if sys.platform == "win32":
         import ctypes
         # Faz a barra de tarefas tratar o programa como um aplicativo próprio (e não como "Python")
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Puxai.Painel")
+    else:
+        from qtpy.QtGui import QGuiApplication
+        # Liga a janela ao atalho do menu (puxai.desktop): a barra de tarefas mostra a logo e o nome
+        QGuiApplication.setDesktopFileName("puxai")
 
     tema = preferencias.tema_em_uso()
     janela = programa.janela = webview.create_window(
@@ -130,7 +160,10 @@ def abrir_janela():
 
     janela.events.shown += ao_mostrar
     janela.events.closing += ao_fechar
-    webview.start(gui="edgechromium")
+    if sys.platform == "win32":
+        webview.start(gui="edgechromium")
+    else:
+        webview.start(gui="qt", icon=os.path.join(PASTA_PAINEL, "icone.png"))
 
 
 def trazer_para_frente():

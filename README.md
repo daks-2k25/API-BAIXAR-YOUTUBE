@@ -1,6 +1,6 @@
 # Puxaí
 
-Programa para Windows que baixa vídeos do **YouTube**, **TikTok**, **Instagram** e de mais de mil sites em **MP4** ou extrai o áudio em **MP3**, além de converter e comprimir fotos e vídeos. Abre numa **janela própria**, com uma **API REST** por trás, feita em Python com Flask e [yt-dlp](https://github.com/yt-dlp/yt-dlp).
+Programa para **Windows** e **Linux** que baixa vídeos do **YouTube**, **TikTok**, **Instagram** e de mais de mil sites em **MP4** ou extrai o áudio em **MP3**, além de converter e comprimir fotos e vídeos. Abre numa **janela própria**, com uma **API REST** por trás, feita em Python com Flask e [yt-dlp](https://github.com/yt-dlp/yt-dlp).
 
 ## ⬇ Baixar o Puxaí (Windows)
 
@@ -16,6 +16,19 @@ Esse link baixa sempre a **versão mais nova**. Não precisa ter conta no GitHub
 **Dica:** clique com o botão direito no **Puxai.exe** → **Enviar para → Área de trabalho (criar atalho)**, para abrir pela Área de Trabalho.
 
 **Para atualizar:** o Puxaí avisa quando sai uma versão nova. Baixe de novo pelo mesmo link e extraia **por cima** da pasta antiga, substituindo os arquivos. Suas configurações e o histórico continuam.
+
+## ⬇ Baixar o Puxaí (Linux)
+
+### **[Clique aqui para baixar o Puxaí para Linux](https://github.com/daks-2k25/API-BAIXAR-YOUTUBE/releases/latest/download/Puxai-linux.tar.xz)**
+
+Para PCs de 64 bits (x86_64) com Ubuntu 22.04, Debian 12, Fedora 37, Linux Mint 21 ou mais novos.
+
+1. **Baixe** pelo link acima (o arquivo **Puxai-linux.tar.xz**).
+2. Clique com o botão direito no arquivo baixado e escolha **Extrair aqui** (ou, no terminal: `tar -xJf Puxai-linux.tar.xz`).
+3. Abra a pasta **Puxai** e dê dois cliques em **Puxai** (ou rode `./Puxai/Puxai`). Não precisa instalar nada: o FFmpeg e o Deno vêm junto.
+4. Na primeira vez, o Puxaí cria o atalho **Puxaí** no **menu de aplicativos**. Depois é só abrir por ele.
+
+**Para atualizar:** como no Windows, baixe de novo pelo mesmo link e extraia **por cima** da pasta antiga.
 
 As novidades de cada versão ficam na página [**Releases**](https://github.com/daks-2k25/API-BAIXAR-YOUTUBE/releases).
 
@@ -35,6 +48,22 @@ O uv, o FFmpeg e o Deno vêm pelo winget, que já vem no Windows 10 e 11. Isso l
 No primeiro clique ele também cria o atalho **Puxaí**, com a logo, na **Área de Trabalho** (quem já tinha o atalho antigo, **Baixar YouTube**, tem ele renomeado sozinho). Depois é só usar o atalho. Se você apagar o atalho, ele não é criado de novo; se mover a pasta do projeto, o atalho é corrigido no próximo uso do `iniciar.bat`. O yt-dlp é atualizado automaticamente uma vez por dia, porque o YouTube muda com frequência.
 
 > Se o Windows mostrar "O Windows protegeu o computador" ao abrir o `iniciar.bat` baixado da internet, clique em **Mais informações → Executar assim mesmo**.
+
+## Início rápido pelo código (Linux)
+
+1. Baixe o projeto (`git clone https://github.com/daks-2k25/API-BAIXAR-YOUTUBE.git` ou **Code → Download ZIP**).
+2. Abra um terminal na pasta do projeto e rode **`sh iniciar.sh`**.
+
+**Na primeira vez**, ele prepara sozinho o que faltar, **sem pedir senha** (nada é instalado no sistema): o **uv** (em `~/.local/bin`), o Python e as bibliotecas (na pasta `.ambiente`, incluindo o Deno e a janela do programa, que usa o Qt) e, se o sistema não tiver o FFmpeg, um FFmpeg pronto (na pasta `.ffmpeg`, cerca de 150 MB, conferido pelo SHA-256). Precisa do `curl` ou do `wget`. Depois, o Puxaí cria o atalho **Puxaí** no menu de aplicativos, que roda o mesmo `iniciar.sh`; se a pasta do projeto mudar de lugar, o atalho é corrigido no próximo uso. As mensagens ficam no `Puxai.log`.
+
+No Linux, o programa funciona igual ao do Windows, com estas diferenças:
+
+- **Janela própria:** usa o Qt. Se ela não abrir (ex.: PC sem tela, ou faltando uma biblioteca do sistema), o painel abre no navegador. No Ubuntu/Debian com X11, a falta mais comum é a `libxcb-cursor0`: `sudo apt install libxcb-cursor0`. O motivo fica no `Puxai.log`.
+- **Link copiado:** o Puxaí lê a área de transferência pelo `xclip`, `xsel` ou `wl-paste` (o primeiro que estiver instalado). Sem nenhum deles, o aviso de link copiado não aparece: `sudo apt install xclip` (ou `wl-clipboard`, no Wayland).
+- **Escolher pasta:** usa a janela do sistema (zenity no GNOME, kdialog no KDE).
+- **Abrir** e **Mostrar na pasta** usam o programa padrão do sistema e o gerenciador de arquivos (Arquivos, Dolphin, Nemo, Thunar...).
+- **Tema automático:** segue o modo escuro do GNOME ou do KDE.
+- **Sem ícone perto do relógio:** no modo navegador, feche pelo botão **Encerrar** do painel (ou ele fecha sozinho 3 minutos depois que nenhuma aba estiver aberta).
 
 ## Funcionalidades
 
@@ -57,7 +86,7 @@ No primeiro clique ele também cria o atalho **Puxaí**, com a logo, na **Área 
 - **Compressor de fotos**: JPG, PNG, WebP e HEIC, uma ou várias de uma vez. Testa algumas qualidades em cada foto e fica com o menor arquivo que continua visualmente igual (medido pelo SSIM), em três níveis. Nunca deixa o arquivo maior, corrige a orientação das fotos de celular, remove a localização (GPS) e pode reduzir o tamanho (2560, 1920 ou 1280 px)
 - **Compressor de vídeos**: MP4, MOV, MKV, WebM, AVI e outros viram MP4 (H.264), que abre em qualquer lugar. Para **caber num tamanho** (WhatsApp 16 MB, Discord 10 MB, E-mail 25 MB ou outro), em duas passadas e reduzindo a resolução sozinho quando o vídeo é longo; ou por **qualidade** (alta, equilibrada ou máxima compressão). Resolução máxima opcional (1080p, 720p, 480p), andamento em %, cancelar no meio e vídeos de celular continuam em pé. Nunca deixa o arquivo maior
 - **Meus downloads**: lista do que o programa já salvou (vídeos, músicas e fotos), com filtros, **Abrir** e **Mostrar na pasta**, mesmo depois de fechar e abrir o programa
-- **Executável para Windows**, que não precisa de Python instalado e mantém o yt-dlp atualizado sozinho
+- **Programa pronto para Windows e Linux**, que não precisa de Python instalado e mantém o yt-dlp atualizado sozinho
 
 ## Usando o programa
 
@@ -109,7 +138,7 @@ O programa passa a usar esse login automaticamente, em todos os sites (dá para 
 
 - **Projeto baixado como ZIP:** o programa baixa o ZIP novo do GitHub e substitui os arquivos do projeto. A pasta `downloads`, o ambiente do Python (`.ambiente`), os logs e o atalho não são tocados. Arquivos que saíram do projeto na versão nova são apagados.
 - **Projeto clonado com git:** o programa roda `git pull`, mas só se a pasta estiver na branch `main` e sem alterações locais no código. Assim, quem está desenvolvendo não tem o trabalho sobrescrito.
-- **Programa gerado (`Puxai.exe`):** o aviso aparece com o link da página **Releases**, onde está o `.zip` da versão nova; é só descompactar por cima da pasta do programa.
+- **Programa gerado (`Puxai.exe` ou o do Linux):** o aviso aparece com o link da página **Releases**, onde está o `.zip` (ou `.tar.xz`) da versão nova; é só descompactar por cima da pasta do programa.
 
 ## Publicando uma versão nova
 
@@ -123,11 +152,12 @@ Na próxima vez que alguém abrir o programa, o aviso de atualização aparece.
 ```
 API-BAIXAR-YOUTUBE/
 ├── iniciar.bat          # Dois cliques: prepara tudo e abre o programa
+├── iniciar.sh           # O mesmo, no Linux ("sh iniciar.sh")
 ├── app.py               # Início do programa: liga o servidor e abre a janela ou o navegador
 ├── versao.json          # Versão do programa e novidades (usado na atualização)
 ├── pyproject.toml       # Bibliotecas do Python (usado pelo uv)
 ├── painel/              # Painel (index.html, style.css, script.js)
-│                        # + logo.webp, favicon.svg e icone.ico (ícone do programa)
+│                        # + logo.webp, favicon.svg, icone.ico e icone.png (ícone do programa)
 ├── rotas/               # Endereços da API (/api/...), um arquivo por área
 │   ├── __init__.py      # Cria o app Flask e registra todas as rotas
 │   ├── seguranca.py     # Só o painel pode usar a API (bloqueia pedidos de outros sites)
@@ -139,8 +169,10 @@ API-BAIXAR-YOUTUBE/
 │   └── utilidades.py    # O que as rotas compartilham (arquivos enviados, salvar em Downloads)
 ├── servicos/            # O que o programa faz (as rotas só chamam estes arquivos)
 │   ├── programa.py      # Porta, uma instância só, reiniciar, encerrar e estado da janela
-│   ├── janela.py        # Janela própria (pywebview) e ícone na barra de tarefas
-│   ├── bandeja.py       # Ícone perto do relógio, com menu (feito direto com o Windows, sem biblioteca)
+│   ├── janela.py        # Janela própria (pywebview: WebView2 no Windows, Qt no Linux) e ícone na barra de tarefas
+│   ├── sistema.py       # O que muda entre Windows e Linux: abrir arquivo, mostrar na pasta
+│   ├── atalho.py        # Linux: atalho "Puxaí" no menu de aplicativos
+│   ├── bandeja.py       # Ícone perto do relógio, com menu (feito direto com o Windows, sem biblioteca; só no Windows)
 │   ├── area_de_transferencia.py # Link de vídeo copiado (o painel oferece "Colar")
 │   ├── caminhos.py      # Pastas do projeto e pasta Downloads do usuário
 │   ├── preferencias.py  # Preferências salvas (.preferencias.json): modo de abertura, pastas, atualização adiada
@@ -158,13 +190,15 @@ API-BAIXAR-YOUTUBE/
 ├── ferramentas/
 │   ├── iniciar.ps1      # Usado pelo iniciar.bat: instala o que faltar, cria o atalho e abre o programa
 │   ├── gerar_exe.bat    # Gera o executável (PyInstaller), com o FFmpeg junto
-│   └── testar_exe.ps1   # Testa o executável gerado (usado também pelo GitHub)
+│   ├── testar_exe.ps1   # Testa o executável gerado (usado também pelo GitHub)
+│   ├── gerar_linux.sh   # O mesmo para o Linux, com o FFmpeg e o Deno junto
+│   └── testar_linux.sh  # Testa o programa gerado para Linux (usado também pelo GitHub)
 ├── .github/workflows/
-│   └── gerar-exe.yml    # Gera e publica o .exe numa Release quando a versão muda
+│   └── gerar-exe.yml    # Gera e publica o programa (Windows e Linux) numa Release quando a versão muda
 └── README.md
 ```
 
-Ao rodar, a aplicação cria a pasta `.ambiente/` (Python e bibliotecas, preparada pelo uv), a pasta `downloads/` (arquivos temporários enquanto baixa; os prontos vão para a pasta Downloads do Windows) e o `Puxai.log`. O `gerar_exe.bat` cria a pasta `Puxai/` e o atalho `Puxaí.lnk`. Nada disso vai para o Git.
+Ao rodar, a aplicação cria a pasta `.ambiente/` (Python e bibliotecas, preparada pelo uv), a pasta `downloads/` (arquivos temporários enquanto baixa; os prontos vão para a pasta Downloads do usuário) e o `Puxai.log`. No Linux, o `iniciar.sh` pode criar a pasta `.ffmpeg/`. O `gerar_exe.bat` cria a pasta `Puxai/` e o atalho `Puxaí.lnk`. Nada disso vai para o Git.
 
 ## Gerar o executável (Windows)
 
@@ -180,19 +214,28 @@ O `gerar_exe.bat` copia o FFmpeg deste PC (`ffmpeg.exe` e `ffprobe.exe`) para de
 
 Para conferir o programa gerado: `powershell -File ferramentas\testar_exe.ps1`. Ele abre uma cópia do programa (sem o FFmpeg instalado no PC, para garantir que o incluído funciona), testa a API, converte e comprime uma imagem e fecha.
 
+## Gerar o programa (Linux)
+
+Com o uv e o FFmpeg instalados (o `iniciar.sh` instala o uv), rode `sh ferramentas/gerar_linux.sh`. Ele gera o programa na pasta `Puxai/`, com o FFmpeg deste PC e o Deno das bibliotecas junto. Para conferir: `sh ferramentas/testar_linux.sh` (com o `xvfb-run` instalado, também testa se a janela Qt abre).
+
+O programa vale para os Linux com a mesma versão da glibc do PC onde foi gerado, ou mais nova. Por isso o GitHub gera no Ubuntu 22.04.
+
 ### Gerado automaticamente pelo GitHub
 
-Sempre que a versão muda no `versao.json` e vai para a `main`, o GitHub gera o programa sozinho (`.github/workflows/gerar-exe.yml`): baixa o FFmpeg (conferindo o SHA-256), roda o mesmo `gerar_exe.bat`, testa com o `testar_exe.ps1` e publica o `.zip` numa **Release** `vX.Y.Z`, com as novidades da versão. Só publica se o teste passar e se ainda não existir uma Release dessa versão.
+Sempre que a versão muda no `versao.json` e vai para a `main`, o GitHub gera o programa sozinho (`.github/workflows/gerar-exe.yml`), para Windows e Linux ao mesmo tempo: baixa o FFmpeg (conferindo o SHA-256), roda o mesmo `gerar_exe.bat` / `gerar_linux.sh`, testa com o `testar_exe.ps1` / `testar_linux.sh` e publica os arquivos numa **Release** `vX.Y.Z`, com as novidades da versão. Só publica se o teste do Windows passar e se ainda não existir uma Release dessa versão. Se só o Linux falhar, a Release sai com o Windows (e um aviso na execução).
 
-O arquivo se chama sempre **`Puxai-windows.zip`** (sem a versão no nome), por isso o link `https://github.com/daks-2k25/API-BAIXAR-YOUTUBE/releases/latest/download/Puxai-windows.zip` baixa sempre a versão mais nova, direto. É o link para divulgar (site, WhatsApp, redes sociais).
+Os arquivos se chamam sempre **`Puxai-windows.zip`** e **`Puxai-linux.tar.xz`** (sem a versão no nome), por isso estes links baixam sempre a versão mais nova, direto. São os links para divulgar (site, WhatsApp, redes sociais):
 
-Pela aba **Actions → Gerar o Puxai.exe → Run workflow**:
-- **Sem marcar "publicar":** só gera e testa. O `.zip` fica para baixar em **Artifacts**, na página da execução, por 7 dias.
-- **Marcando "publicar":** gera, testa e coloca o `.zip` na Release da versão atual (cria a Release, ou troca o arquivo e o texto se ela já existir). Útil para refazer o `.zip` de uma versão já lançada.
+- Windows: `https://github.com/daks-2k25/API-BAIXAR-YOUTUBE/releases/latest/download/Puxai-windows.zip`
+- Linux: `https://github.com/daks-2k25/API-BAIXAR-YOUTUBE/releases/latest/download/Puxai-linux.tar.xz`
 
-## Rodando em outros sistemas (Linux/macOS)
+Pela aba **Actions → Gerar o Puxaí (Windows e Linux) → Run workflow**:
+- **Sem marcar "publicar":** só gera e testa. Os arquivos ficam para baixar em **Artifacts**, na página da execução, por 7 dias.
+- **Marcando "publicar":** gera, testa e coloca os arquivos na Release da versão atual (cria a Release, ou troca os arquivos e o texto se ela já existir). Útil para refazer os arquivos de uma versão já lançada.
 
-Instale o [uv](https://docs.astral.sh/uv/) e o FFmpeg (`sudo apt install ffmpeg` ou `brew install ffmpeg`), depois:
+## Rodando no macOS
+
+Não é testado, mas deve funcionar no navegador. Instale o [uv](https://docs.astral.sh/uv/) e o FFmpeg (`brew install ffmpeg`), depois:
 
 ```bash
 uv run app.py
@@ -268,7 +311,7 @@ Responde `400` para links de playlist e `404` quando o vídeo não é encontrado
 
 ### `GET /api/link-copiado`
 
-Se o texto copiado agora (área de transferência do Windows) tiver um link de um site que o yt-dlp baixa, devolve `{"url": "...", "site": "YouTube"}`; senão (ou com a opção desligada nas Configurações), `{"url": null, "site": null}`. Nenhum outro texto copiado é devolvido.
+Se o texto copiado agora (área de transferência do sistema) tiver um link de um site que o yt-dlp baixa, devolve `{"url": "...", "site": "YouTube"}`; senão (ou com a opção desligada nas Configurações), `{"url": null, "site": null}`. Nenhum outro texto copiado é devolvido.
 
 ### `GET /api/playlist?url=<link>`
 
@@ -406,7 +449,7 @@ Tiram um item da lista, ou limpam a lista toda. Os arquivos continuam na pasta D
 
 ### `POST /api/abrir/<id>`
 
-Abre o arquivo no programa padrão do Windows. Responde `404` se o arquivo foi movido ou apagado. A rota `POST /api/mostrar/<id>` também passa a achar os arquivos do histórico.
+Abre o arquivo no programa padrão do sistema. Responde `404` se o arquivo foi movido ou apagado. A rota `POST /api/mostrar/<id>` também passa a achar os arquivos do histórico.
 
 ### `POST /api/ping` e `POST /api/encerrar`
 
@@ -432,7 +475,7 @@ Baixa e instala a versão nova e reinicia o programa. Responde `409` se houver d
 
 ### `GET /api/preferencias` e `POST /api/preferencias`
 
-Lê ou salva como o programa abre (`modo_abertura`: `janela` ou `navegador`, vale a partir da próxima vez que o programa abrir) e o tema (`tema`: `automatico`, `claro` ou `escuro`). Dá para enviar um ou os dois. A resposta traz também `tema_em_uso` (`claro` ou `escuro`: no automático, o do Windows).
+Lê ou salva como o programa abre (`modo_abertura`: `janela` ou `navegador`, vale a partir da próxima vez que o programa abrir) e o tema (`tema`: `automatico`, `claro` ou `escuro`). Dá para enviar um ou os dois. A resposta traz também `tema_em_uso` (`claro` ou `escuro`: no automático, o do sistema).
 
 ```json
 { "modo_abertura": "janela", "tema": "automatico", "tema_em_uso": "escuro" }
@@ -449,7 +492,7 @@ Lê ou salva onde os arquivos prontos são salvos. `modo` é `uma` (uma pasta pa
 
 ### `POST /api/pastas/escolher`
 
-Abre a janela do Windows para escolher uma pasta e devolve `{"pasta": "D:\\Videos"}` (ou `{"pasta": null}` se a pessoa cancelar). Só escolhe: para salvar, envie a pasta em `POST /api/pastas`. Corpo opcional: `{"atual": "<pasta onde a janela abre>"}`.
+Abre a janela do sistema para escolher uma pasta e devolve `{"pasta": "D:\\Videos"}` (ou `{"pasta": null}` se a pessoa cancelar). Só escolhe: para salvar, envie a pasta em `POST /api/pastas`. Corpo opcional: `{"atual": "<pasta onde a janela abre>"}`.
 
 ### `POST /api/abrir-no-navegador` e `POST /api/reabrir-como-aplicativo`
 
